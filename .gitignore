@@ -1,0 +1,16 @@
+# GBDK build artifacts
+*.o
+*.lst
+*.map
+*.sym
+*.cdb
+*.ihx
+*.noi
+*.asm
+
+# Compiled ROMs
+*.gb
+
+# Python caches
+__pycache__/
+*.pyc
