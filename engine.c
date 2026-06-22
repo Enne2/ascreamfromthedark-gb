@@ -33,6 +33,24 @@ uint8_t das_active = 0;
 #define DAS_DELAY 12
 #define DAS_REPEAT 6
 
+// Enemy variables
+uint8_t enemy_lx = 0;
+uint8_t enemy_ly = 0;
+uint8_t enemy_is_moving = 0;
+uint8_t enemy_move_progress = 0;
+int8_t enemy_start_lx, enemy_start_ly;
+int8_t enemy_target_lx, enemy_target_ly;
+int16_t enemy_start_px, enemy_start_py;
+int16_t enemy_target_px, enemy_target_py;
+uint8_t enemy_cooldown = 0;
+uint8_t game_over = 0;
+
+const metasprite_t enemy_metasprite[] = {
+    METASPR_ITEM(-8, -8, 0, S_PAL(1)),
+    METASPR_ITEM(0, 8, 2, S_PAL(1)),
+    METASPR_TERM
+};
+
 static void generate_maze(void) {
     // Clear maze (all 0/walls)
     memset(maze, 0, sizeof(maze));
@@ -209,6 +227,7 @@ void engine_init(void) {
     
     // Explicitly initialize DMG palette registers
     OBP0_REG = 0xE4; // 11 10 01 00 (Black, Dark Gray, Light Gray, White)
+    OBP1_REG = 0x1B; // 00 01 10 11 (Inverted palette for the ghost enemy)
     BGP_REG = 0xE4;
     
     // Initialize GBC palettes (safe on DMG, does nothing)
@@ -219,12 +238,38 @@ void engine_init(void) {
     set_bkg_data(0, tiles_TILE_COUNT, tiles_tiles);
     set_sprite_data(0, player_TILE_COUNT, player_tiles);
 
+    // Spawn enemy at a random path tile sufficiently far from the player
+    while (1) {
+        uint8_t rx = rand() % MAP_SIZE;
+        uint8_t ry = rand() % MAP_SIZE;
+        if (maze[ry][rx] == 1) {
+            // Distance (Manhattan) to player start (1, 1)
+            int8_t dx = rx - 1;
+            int8_t dy = ry - 1;
+            if (dx < 0) dx = -dx;
+            if (dy < 0) dy = -dy;
+            if ((dx + dy) >= 5) {
+                enemy_lx = rx;
+                enemy_ly = ry;
+                break;
+            }
+        }
+    }
+    enemy_is_moving = 0;
+    enemy_cooldown = 30;
+    game_over = 0;
+
     draw_map(player_lx, player_ly);
     update_camera();
     update_player_sprite();
 }
 
 void engine_update(uint8_t keys, uint8_t prev_keys) {
+    if (game_over) {
+        BGP_REG = 0xFF; // Set screen to all black to signify Game Over
+        return;
+    }
+
     if (is_moving) {
         move_progress++;
         
@@ -262,6 +307,119 @@ void engine_update(uint8_t keys, uint8_t prev_keys) {
             // Set player to idle stand frame
             update_player_sprite();
         }
+    }
+
+    // Update enemy movement progress
+    if (enemy_is_moving) {
+        enemy_move_progress++;
+        if (enemy_move_progress == 16) {
+            enemy_is_moving = 0;
+            enemy_lx = enemy_target_lx;
+            enemy_ly = enemy_target_ly;
+            enemy_cooldown = 24; // Delay between steps to make the enemy move slower than the player
+        }
+    }
+
+    // Update enemy cooldown
+    if (enemy_cooldown > 0) {
+        enemy_cooldown--;
+    }
+
+    // Enemy AI pathfinding toward the player
+    if (!enemy_is_moving && enemy_cooldown == 0) {
+        // Calculate Chebyshev distance to player
+        int8_t dx = (int8_t)player_lx - (int8_t)enemy_lx;
+        int8_t dy = (int8_t)player_ly - (int8_t)enemy_ly;
+        int8_t abs_dx = (dx < 0) ? -dx : dx;
+        int8_t abs_dy = (dy < 0) ? -dy : dy;
+        int8_t dist = (abs_dx > abs_dy) ? abs_dx : abs_dy;
+        
+        if (dist <= 4) {
+            int8_t best_nx = enemy_lx;
+            int8_t best_ny = enemy_ly;
+            // Initialize with current squared distance so we only move if we get strictly closer
+            int16_t min_dist_sq = (int16_t)dx * dx + (int16_t)dy * dy;
+            
+            // Check all 4 directions and choose the one that minimizes the squared distance to the player
+            // Down-Right (lx + 1, ly)
+            if (enemy_lx + 1 < MAP_SIZE && maze[enemy_ly][enemy_lx + 1] == 1) {
+                int8_t ndx = (int8_t)player_lx - (int8_t)(enemy_lx + 1);
+                int8_t ndy = (int8_t)player_ly - (int8_t)enemy_ly;
+                int16_t d_sq = (int16_t)ndx * ndx + (int16_t)ndy * ndy;
+                if (d_sq < min_dist_sq) { min_dist_sq = d_sq; best_nx = enemy_lx + 1; best_ny = enemy_ly; }
+            }
+            // Down-Left (lx, ly + 1)
+            if (enemy_ly + 1 < MAP_SIZE && maze[enemy_ly + 1][enemy_lx] == 1) {
+                int8_t ndx = (int8_t)player_lx - (int8_t)enemy_lx;
+                int8_t ndy = (int8_t)player_ly - (int8_t)(enemy_ly + 1);
+                int16_t d_sq = (int16_t)ndx * ndx + (int16_t)ndy * ndy;
+                if (d_sq < min_dist_sq) { min_dist_sq = d_sq; best_nx = enemy_lx; best_ny = enemy_ly + 1; }
+            }
+            // Up-Left (lx - 1, ly)
+            if (enemy_lx > 0 && maze[enemy_ly][enemy_lx - 1] == 1) {
+                int8_t ndx = (int8_t)player_lx - (int8_t)(enemy_lx - 1);
+                int8_t ndy = (int8_t)player_ly - (int8_t)enemy_ly;
+                int16_t d_sq = (int16_t)ndx * ndx + (int16_t)ndy * ndy;
+                if (d_sq < min_dist_sq) { min_dist_sq = d_sq; best_nx = enemy_lx - 1; best_ny = enemy_ly; }
+            }
+            // Up-Right (lx, ly - 1)
+            if (enemy_ly > 0 && maze[enemy_ly - 1][enemy_lx] == 1) {
+                int8_t ndx = (int8_t)player_lx - (int8_t)enemy_lx;
+                int8_t ndy = (int8_t)player_ly - (int8_t)(enemy_ly - 1);
+                int16_t d_sq = (int16_t)ndx * ndx + (int16_t)ndy * ndy;
+                if (d_sq < min_dist_sq) { min_dist_sq = d_sq; best_nx = enemy_lx; best_ny = enemy_ly - 1; }
+            }
+            
+            if (best_nx != (int8_t)enemy_lx || best_ny != (int8_t)enemy_ly) {
+                enemy_is_moving = 1;
+                enemy_move_progress = 0;
+                enemy_start_lx = enemy_lx;
+                enemy_start_ly = enemy_ly;
+                enemy_target_lx = best_nx;
+                enemy_target_ly = best_ny;
+                
+                enemy_start_px = (enemy_start_lx - enemy_start_ly) * 16 + 96;
+                enemy_start_py = (enemy_start_lx + enemy_start_ly) * 8 + 16;
+                enemy_target_px = (enemy_target_lx - enemy_target_ly) * 16 + 96;
+                enemy_target_py = (enemy_target_lx + enemy_target_ly) * 8 + 16;
+            }
+        }
+    }
+
+    // Render enemy sprite relative to the scroll viewport
+    int16_t enemy_px, enemy_py;
+    if (enemy_is_moving) {
+        enemy_px = enemy_start_px + (((enemy_target_px - enemy_start_px) * (int16_t)enemy_move_progress) >> 4);
+        enemy_py = enemy_start_py + (((enemy_target_py - enemy_start_py) * (int16_t)enemy_move_progress) >> 4);
+    } else {
+        enemy_px = (enemy_lx - enemy_ly) * 16 + 96;
+        enemy_py = (enemy_lx + enemy_ly) * 8 + 16;
+    }
+    
+    int16_t enemy_screen_x = enemy_px - scroll_x;
+    int16_t enemy_screen_y = enemy_py - scroll_y;
+    
+    // Determine player-enemy distance for visibility masking
+    int8_t edx = (int8_t)player_lx - (int8_t)enemy_lx;
+    int8_t edy = (int8_t)player_ly - (int8_t)enemy_ly;
+    if (edx < 0) edx = -edx;
+    if (edy < 0) edy = -edy;
+    uint8_t ep_dist = (edx > edy) ? edx : edy;
+    
+    // Render only if within fog of war radius (<= 2)
+    if (ep_dist <= 2 && enemy_screen_x >= -8 && enemy_screen_x <= 168 && enemy_screen_y >= -8 && enemy_screen_y <= 152) {
+        move_metasprite(enemy_metasprite, 0, 4, enemy_screen_x, enemy_screen_y); // Sprite index offset 4
+    } else {
+        move_metasprite(enemy_metasprite, 0, 4, 0, 0); // Hide offscreen
+    }
+
+    // Collision detection / Game Over conditions
+    if ((player_lx == enemy_lx && player_ly == enemy_ly) ||
+        (is_moving && enemy_is_moving && target_lx == enemy_target_lx && target_ly == enemy_target_ly) ||
+        (is_moving && enemy_is_moving && target_lx == enemy_start_lx && target_ly == enemy_start_ly && start_lx == enemy_target_lx && start_ly == enemy_target_ly)) {
+        game_over = 1;
+        BGP_REG = 0xFF; // Screen all black
+        return;
     }
 
     uint8_t keys_pressed = keys & ~prev_keys;
