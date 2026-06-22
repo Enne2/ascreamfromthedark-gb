@@ -101,6 +101,47 @@ def generate_tiles():
         
     img.save("tiles.png")
 
+def generate_stamina():
+    # 13 variants of 8x16 tiles = 104x16 pixels
+    img = Image.new("P", (104, 16), 0) # Fill with 0 (transparent)
+    img.putpalette(PALETTE)
+    
+    def draw_sprite_bar_tile(x_off, filled_px, cap=None):
+        for y in range(8):
+            for x in range(8):
+                color = 3 # black inside
+                if y == 0 or y == 7:
+                    color = 3 # black border
+                elif y == 1 or y == 6:
+                    color = 2 # dark gray inner border
+                else:
+                    if x < filled_px:
+                        color = 1 # light gray (filled)
+                    else:
+                        color = 3 # black (empty)
+                        
+                if cap == 'L' and x == 0:
+                    color = 2 # left border
+                elif cap == 'R' and x == 7:
+                    color = 2 # right border
+                    
+                img.putpixel((x_off + x, y), color)
+                
+    # Also fill bottom 8 rows with transparent color 0
+    for y in range(8, 16):
+        for x in range(104):
+            img.putpixel((x, y), 0)
+            
+    for i in range(9):
+        draw_sprite_bar_tile(i * 8, i)
+        
+    draw_sprite_bar_tile(9 * 8, 0, 'L')
+    draw_sprite_bar_tile(10 * 8, 0, 'R')
+    draw_sprite_bar_tile(11 * 8, 8, 'L')
+    draw_sprite_bar_tile(12 * 8, 8, 'R')
+    
+    img.save("stamina.png")
+
 # Grids for player frames
 # 0 = White, 1 = Light Gray, 2 = Dark Gray, 3 = Black
 
@@ -227,7 +268,177 @@ def generate_player():
     
     player_img.save("player.png")
 
+def generate_gameover():
+    # 80x16 pixels
+    img = Image.new("P", (80, 16), 3)
+    img.putpalette(PALETTE)
+    
+    # We can design each letter on an 8x16 grid
+    # Let's specify the pixel grids (16 rows of 8 chars)
+    # 0: White (text body), 2: Dark Gray (text outline/shadow), 3: Black (background)
+    grids = {
+        'G': [
+            "33322223",
+            "33200002",
+            "32002222",
+            "32023333",
+            "32023222",
+            "32023202",
+            "32002202",
+            "33200002",
+            "33322223",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333"
+        ],
+        'A': [
+            "33322333",
+            "33200233",
+            "32022023",
+            "32022023",
+            "32000023",
+            "32022023",
+            "32022023",
+            "32022023",
+            "32233223",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333"
+        ],
+        'M': [
+            "32233223",
+            "32022023",
+            "32000023",
+            "32022023",
+            "32022023",
+            "32022023",
+            "32022023",
+            "32022023",
+            "32233223",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333"
+        ],
+        'E': [
+            "32222223",
+            "32000002",
+            "32022222",
+            "32000023",
+            "32022222",
+            "32023333",
+            "32000002",
+            "32222223",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333"
+        ],
+        ' ': [
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333"
+        ],
+        'O': [
+            "33222233",
+            "32000023",
+            "32022023",
+            "32022023",
+            "32022023",
+            "32022023",
+            "32000023",
+            "33222233",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333"
+        ],
+        'V': [
+            "32233223",
+            "32022023",
+            "32022023",
+            "32022023",
+            "32022023",
+            "32022023",
+            "33200233",
+            "33322333",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333"
+        ],
+        'R': [
+            "32222233",
+            "32000023",
+            "32022023",
+            "32000233",
+            "32022023",
+            "32022023",
+            "32022023",
+            "32233223",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333",
+            "33333333"
+        ]
+    }
+    
+    text = "GAME OVER"
+    for i, char in enumerate(text):
+        grid = grids[char]
+        for y in range(16):
+            for x in range(8):
+                val = int(grid[y][x])
+                target_x = i * 8 + x + 4
+                target_y = y + 3
+                if target_x < 80 and target_y < 16:
+                    img.putpixel((target_x, target_y), val)
+                
+    img.save("gameover.png")
+
 if __name__ == "__main__":
     generate_tiles()
     generate_player()
-    print("PNG assets generated (32x520 tiles, 8-frame player animation set created).")
+    generate_gameover()
+    generate_stamina()
+    print("PNG assets generated (tiles, player, gameover, and stamina).")

@@ -12,9 +12,20 @@ Un motore isometrico sperimentale per Game Boy (DMG/CGB) scritto in C con **GBDK
 *   **Delayed Auto Shift (DAS)**: Controlli reattivi e confortevoli con delay iniziale di 12 frame e ripetizione ogni 6 frame per il movimento continuo tenendo premuto il D-Pad.
 *   **Autotiling Intelligente**: Calcolo dei vicini (maschera a 4 bit) per selezionare automaticamente il bordo e gli angoli di ciascuna tessera del pavimento (16 varianti per ognuno dei 2 stili di pavimento alternati a scacchiera).
 *   **Pipeline di Asset Ottimizzata**: Generazione procedurale di tile e sprite da script Python (`generate_assets.py`) e compilazione in C tramite `png2asset`.
-*   **Test Headless & Computer Vision**:
-    *   Simulazione dell'input e verifica dello stato direttamente leggendo i registri WRAM del Game Boy in esecuzione.
-    *   Rilevamento di glitch grafici (pixel neri o spazi vuoti non allineati) sulla ROM renderizzata usando filtri morfologici di **OpenCV**.
+- Animazione completa dei movimenti del giocatore.
+- Transizione al Game Over alla collisione.
+- Menu Iniziale con copertina d'arte a 2-bit nativa per hardware Game Boy.
+
+### Soundtrack
+
+Il gioco implementa la musica generata proceduralmente manipolando i registri audio hardware del Game Boy in `engine.c`.
+
+1. **Title Theme:** Una solenne e misteriosa melodia composta da 32 battute basata sugli accordi La minore, Sol, Fa e Mi, che accompagna la schermata d'avvio a schermo intero.
+2. **Gameplay Theme:** Un battito ritmico ansioso che accelera progressivamente l'intensità all'inseguimento del fantasma, aumentando la pressione psicologica sul giocatore.
+3. **Game Over Theme:** Un concerto tragico polifonico di 128 note con percussioni sinfoniche, basso virtuoso e drammatica discesa melodica, per sottolineare la sconfitta del giocatore.
+
+## Compilazione
+Assicurati di aver installato [GBDK-2020](https://github.com/gbdk-2020/gbdk-2020).
 
 ---
 

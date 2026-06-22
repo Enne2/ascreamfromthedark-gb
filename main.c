@@ -1,8 +1,10 @@
 #include <gb/gb.h>
 #include "engine.h"
 
+uint8_t app_state = 0; // 0 = title, 1 = game
+
 void main(void) {
-    engine_init();
+    title_init();
     
     SHOW_BKG;
     SHOW_SPRITES;
@@ -13,7 +15,17 @@ void main(void) {
     while (1) {
         wait_vbl_done();
         uint8_t keys = joypad();
-        engine_update(keys, prev_keys);
+        
+        if (app_state == 0) {
+            title_update(keys, prev_keys);
+            if ((keys & J_START) && !(prev_keys & J_START)) {
+                app_state = 1;
+                engine_init();
+            }
+        } else {
+            engine_update(keys, prev_keys);
+        }
+        
         prev_keys = keys;
     }
 }
