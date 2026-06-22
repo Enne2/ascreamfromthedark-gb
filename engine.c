@@ -16,9 +16,16 @@ static uint8_t map_buffer[32 * 32];
 uint8_t player_lx = 1;
 uint8_t player_ly = 1;
 uint8_t player_dir = 0; // 0=DR, 1=DL, 2=UL, 3=UR
-uint8_t walk_timer = 0;
 uint8_t scroll_x = 0;
 uint8_t scroll_y = 0;
+
+// Movement transition variables
+uint8_t is_moving = 0;
+uint8_t move_progress = 0;
+int8_t start_lx, start_ly;
+int8_t target_lx, target_ly;
+int16_t start_px, start_py;
+int16_t target_px, target_py;
 
 // DAS variables
 uint8_t das_timer = 0;
@@ -143,7 +150,7 @@ static void update_camera(void) {
 }
 
 static void update_player_sprite(void) {
-    uint8_t frame_offset = (walk_timer > 0) ? ((walk_timer >> 2) & 1) : 0;
+    uint8_t frame_offset = is_moving ? ((move_progress >> 2) & 1) : 0;
     move_metasprite(player_metasprites[player_dir * 2 + frame_offset], 0, 0, 88, 88);
 }
 
@@ -174,15 +181,39 @@ void engine_init(void) {
 }
 
 void engine_update(uint8_t keys, uint8_t prev_keys) {
-    if (walk_timer > 0) {
-        walk_timer--;
+    if (is_moving) {
+        move_progress++;
+        
+        // Interpolate camera position
+        int16_t px = start_px + (((target_px - start_px) * (int16_t)move_progress) >> 4);
+        int16_t py = start_py + (((target_py - start_py) * (int16_t)move_progress) >> 4);
+        
+        scroll_x = px - 64;
+        scroll_y = py - 72;
+        move_bkg(scroll_x, scroll_y);
+        
+        // Update walk animation frame (alternate frame every 4 ticks)
         update_player_sprite();
+        
+        if (move_progress == 16) {
+            is_moving = 0;
+            player_lx = target_lx;
+            player_ly = target_ly;
+            
+            // Final snap to target position to avoid any rounding errors
+            int16_t final_px = (player_lx - player_ly) * 16 + 96;
+            int16_t final_py = (player_lx + player_ly) * 8 + 16;
+            scroll_x = final_px - 64;
+            scroll_y = final_py - 72;
+            move_bkg(scroll_x, scroll_y);
+            
+            // Set player to idle stand frame
+            update_player_sprite();
+        }
+        return; // Ignore other inputs while moving
     }
 
     uint8_t keys_pressed = keys & ~prev_keys;
-
-    int8_t move_lx = 0;
-    int8_t move_ly = 0;
 
     if (keys_pressed) {
         das_timer = DAS_DELAY;
@@ -196,6 +227,9 @@ void engine_update(uint8_t keys, uint8_t prev_keys) {
     } else {
         das_active = 0;
     }
+
+    int8_t move_lx = 0;
+    int8_t move_ly = 0;
 
     if (keys_pressed & J_RIGHT) {
         move_lx = 1; player_dir = 0; // DR
@@ -214,12 +248,26 @@ void engine_update(uint8_t keys, uint8_t prev_keys) {
         // Bounds check & wall/empty area collision check
         if (new_lx >= 0 && new_lx < MAP_SIZE && new_ly >= 0 && new_ly < MAP_SIZE) {
             if (maze[new_ly][new_lx] == 1) {
-                player_lx = new_lx;
-                player_ly = new_ly;
-                walk_timer = 12; // 12 frames of walk cycle
+                is_moving = 1;
+                move_progress = 0;
+                start_lx = player_lx;
+                start_ly = player_ly;
+                target_lx = new_lx;
+                target_ly = new_ly;
+                
+                start_px = (start_lx - start_ly) * 16 + 96;
+                start_py = (start_lx + start_ly) * 8 + 16;
+                target_px = (target_lx - target_ly) * 16 + 96;
+                target_py = (target_lx + target_ly) * 8 + 16;
+                
+                update_player_sprite();
+            } else {
+                // If collision blocks, just update direction look frame
+                update_player_sprite();
             }
+        } else {
+            // Out of bounds: update direction look frame
+            update_player_sprite();
         }
-        update_player_sprite();
-        update_camera();
     }
 }

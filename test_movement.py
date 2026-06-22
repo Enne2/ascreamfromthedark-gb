@@ -8,9 +8,9 @@ def main():
         pyboy.tick()
         
     # Read player position from RAM
-    # player_lx at 0xC4E8, player_ly at 0xC4E9
-    lx = pyboy.memory[0xC4E8]
-    ly = pyboy.memory[0xC4E9]
+    # player_lx at 0xC4F4, player_ly at 0xC4F5
+    lx = pyboy.memory[0xC4F4]
+    ly = pyboy.memory[0xC4F5]
     print(f"Initial player coordinates in RAM: lx={lx}, ly={ly}")
     
     # Read maze array from RAM (7x7 starting at 0xC0B1)
@@ -42,7 +42,7 @@ def main():
     pyboy.send_input(WindowEvent.RELEASE_ARROW_DOWN)
     for _ in range(30):
         pyboy.tick()
-    print(f"Player coordinates after DOWN: lx={pyboy.memory[0xC4E8]}, ly={pyboy.memory[0xC4E9]}")
+    print(f"Player coordinates after DOWN: lx={pyboy.memory[0xC4F4]}, ly={pyboy.memory[0xC4F5]}")
     
     # Try pressing Right (Down-Right)
     print("\nSimulating pressing RIGHT...")
@@ -51,7 +51,7 @@ def main():
     pyboy.send_input(WindowEvent.RELEASE_ARROW_RIGHT)
     for _ in range(30):
         pyboy.tick()
-    print(f"Player coordinates after RIGHT: lx={pyboy.memory[0xC4E8]}, ly={pyboy.memory[0xC4E9]}")
+    print(f"Player coordinates after RIGHT: lx={pyboy.memory[0xC4F4]}, ly={pyboy.memory[0xC4F5]}")
     
     pyboy.stop()
 
