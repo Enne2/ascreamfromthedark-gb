@@ -96,6 +96,21 @@ static void generate_maze(void) {
             break;
         }
     }
+    
+    // Reopen some walls to create alternative paths/loops
+    for (uint8_t y = 1; y < MAP_SIZE - 1; y++) {
+        for (uint8_t x = 1; x < MAP_SIZE - 1; x++) {
+            if (maze[y][x] == 0) {
+                // If it connects two paths horizontally or vertically, open it with a 15% probability
+                if ((maze[y][x - 1] == 1 && maze[y][x + 1] == 1) ||
+                    (maze[y - 1][x] == 1 && maze[y + 1][x] == 1)) {
+                    if ((rand() % 100) < 15) {
+                        maze[y][x] = 1;
+                    }
+                }
+            }
+        }
+    }
 }
 
 static void draw_map(uint8_t center_x, uint8_t center_y) {
