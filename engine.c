@@ -44,10 +44,11 @@ int16_t enemy_start_px, enemy_start_py;
 int16_t enemy_target_px, enemy_target_py;
 uint8_t enemy_cooldown = 0;
 uint8_t game_over = 0;
+uint8_t game_over_timer = 0;
 
 const metasprite_t enemy_metasprite[] = {
-    METASPR_ITEM(-8, -8, 0, S_PAL(1)),
-    METASPR_ITEM(0, 8, 2, S_PAL(1)),
+    METASPR_ITEM(-8, -8, 0, S_PALETTE),
+    METASPR_ITEM(0, 8, 2, S_PALETTE),
     METASPR_TERM
 };
 
@@ -266,7 +267,12 @@ void engine_init(void) {
 
 void engine_update(uint8_t keys, uint8_t prev_keys) {
     if (game_over) {
-        BGP_REG = 0xFF; // Set screen to all black to signify Game Over
+        if (game_over_timer > 0) {
+            game_over_timer--;
+            if (game_over_timer == 0) {
+                BGP_REG = 0xFF; // Set screen to all black to signify Game Over
+            }
+        }
         return;
     }
 
@@ -407,8 +413,8 @@ void engine_update(uint8_t keys, uint8_t prev_keys) {
     if (edy < 0) edy = -edy;
     uint8_t ep_dist = (edx > edy) ? edx : edy;
     
-    // Render only if within fog of war radius (<= 2)
-    if (ep_dist <= 2 && enemy_screen_x >= -8 && enemy_screen_x <= 168 && enemy_screen_y >= -8 && enemy_screen_y <= 152) {
+    // Render only if within range (<= 3) to let player see the ghost coming from the edge of fog of war
+    if (ep_dist <= 3 && enemy_screen_x >= -8 && enemy_screen_x <= 168 && enemy_screen_y >= -8 && enemy_screen_y <= 152) {
         move_metasprite(enemy_metasprite, 0, 4, enemy_screen_x, enemy_screen_y); // Sprite index offset 4
     } else {
         move_metasprite(enemy_metasprite, 0, 4, 0, 0); // Hide offscreen
@@ -426,8 +432,7 @@ void engine_update(uint8_t keys, uint8_t prev_keys) {
 
     if (dx_collision < 12 && dy_collision < 6) {
         game_over = 1;
-        BGP_REG = 0xFF; // Screen all black
-        return;
+        game_over_timer = 30; // 30 frames delay (0.5 seconds) to allow player to see the overlap
     }
 
     uint8_t keys_pressed = keys & ~prev_keys;
