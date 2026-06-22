@@ -402,9 +402,9 @@ void engine_update(uint8_t keys, uint8_t prev_keys) {
         enemy_py = (enemy_lx + enemy_ly) * 8 + 16;
     }
     
-    // Add player centering offset (+24, +16) to align with player sprite at (88, 88)
-    int16_t enemy_screen_x = enemy_px - scroll_x + 24;
-    int16_t enemy_screen_y = enemy_py - scroll_y + 16;
+    // Add player centering offset (+24, +16) to align with player sprite at (88, 88), wrapping coordinates to 256
+    int16_t enemy_screen_x = ((enemy_px - scroll_x) & 255) + 24;
+    int16_t enemy_screen_y = ((enemy_py - scroll_y) & 255) + 16;
     
     // Determine player-enemy distance for visibility masking
     int8_t edx = (int8_t)player_lx - (int8_t)enemy_lx;
