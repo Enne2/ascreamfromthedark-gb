@@ -181,6 +181,23 @@ void engine_init(void) {
 }
 
 void engine_update(uint8_t keys, uint8_t prev_keys) {
+    uint8_t keys_pressed = keys & ~prev_keys;
+
+    if (keys_pressed) {
+        das_timer = DAS_DELAY;
+        das_active = 1;
+    } else if (keys && das_active) {
+        if (das_timer > 0) {
+            das_timer--;
+        }
+        if (das_timer == 0 && !is_moving) {
+            das_timer = DAS_REPEAT;
+            keys_pressed = keys; // trigger move
+        }
+    } else {
+        das_active = 0;
+    }
+
     if (is_moving) {
         move_progress++;
         
@@ -211,21 +228,6 @@ void engine_update(uint8_t keys, uint8_t prev_keys) {
             update_player_sprite();
         }
         return; // Ignore other inputs while moving
-    }
-
-    uint8_t keys_pressed = keys & ~prev_keys;
-
-    if (keys_pressed) {
-        das_timer = DAS_DELAY;
-        das_active = 1;
-    } else if (keys && das_active) {
-        das_timer--;
-        if (das_timer == 0) {
-            das_timer = DAS_REPEAT;
-            keys_pressed = keys; // trigger move
-        }
-    } else {
-        das_active = 0;
     }
 
     int8_t move_lx = 0;
