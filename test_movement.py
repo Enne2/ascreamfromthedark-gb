@@ -28,8 +28,8 @@ def main():
     ly = pyboy.memory[player_ly_addr]
     print(f"Initial player coordinates in RAM: lx={lx}, ly={ly}")
     
-    # Read maze array from RAM (15x15 starting at maze_addr)
-    map_size = 15
+    # Read maze array from RAM (7x7 starting at maze_addr)
+    map_size = 7
     maze = []
     for y in range(map_size):
         row = []

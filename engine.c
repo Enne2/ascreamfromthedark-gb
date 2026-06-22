@@ -8,7 +8,7 @@
 #include "tiles.h"
 #include "player.h"
 
-#define MAP_SIZE 15
+#define MAP_SIZE 7
 
 uint8_t maze[MAP_SIZE][MAP_SIZE];
 static uint8_t map_buffer[32 * 32];
@@ -386,7 +386,7 @@ void engine_update(uint8_t keys, uint8_t prev_keys) {
         }
     }
 
-    // Render enemy sprite relative to the scroll viewport
+    // Render enemy sprite relative to the scroll viewport with centering offset
     int16_t enemy_px, enemy_py;
     if (enemy_is_moving) {
         enemy_px = enemy_start_px + (((enemy_target_px - enemy_start_px) * (int16_t)enemy_move_progress) >> 4);
@@ -396,8 +396,9 @@ void engine_update(uint8_t keys, uint8_t prev_keys) {
         enemy_py = (enemy_lx + enemy_ly) * 8 + 16;
     }
     
-    int16_t enemy_screen_x = enemy_px - scroll_x;
-    int16_t enemy_screen_y = enemy_py - scroll_y;
+    // Add player centering offset (+24, +16) to align with player sprite at (88, 88)
+    int16_t enemy_screen_x = enemy_px - scroll_x + 24;
+    int16_t enemy_screen_y = enemy_py - scroll_y + 16;
     
     // Determine player-enemy distance for visibility masking
     int8_t edx = (int8_t)player_lx - (int8_t)enemy_lx;
@@ -413,10 +414,17 @@ void engine_update(uint8_t keys, uint8_t prev_keys) {
         move_metasprite(enemy_metasprite, 0, 4, 0, 0); // Hide offscreen
     }
 
-    // Collision detection / Game Over conditions
-    if ((player_lx == enemy_lx && player_ly == enemy_ly) ||
-        (is_moving && enemy_is_moving && target_lx == enemy_target_lx && target_ly == enemy_target_ly) ||
-        (is_moving && enemy_is_moving && target_lx == enemy_start_lx && target_ly == enemy_start_ly && start_lx == enemy_target_lx && start_ly == enemy_target_ly)) {
+    // Get current interpolated player coordinates
+    int16_t p_px = is_moving ? (start_px + (((target_px - start_px) * (int16_t)move_progress) >> 4)) : ((player_lx - player_ly) * 16 + 96);
+    int16_t p_py = is_moving ? (start_py + (((target_py - start_py) * (int16_t)move_progress) >> 4)) : ((player_lx + player_ly) * 8 + 16);
+
+    // Collision detection: check actual pixel distance (sprites overlap)
+    int16_t dx_collision = p_px - enemy_px;
+    int16_t dy_collision = p_py - enemy_py;
+    if (dx_collision < 0) dx_collision = -dx_collision;
+    if (dy_collision < 0) dy_collision = -dy_collision;
+
+    if (dx_collision < 12 && dy_collision < 6) {
         game_over = 1;
         BGP_REG = 0xFF; // Screen all black
         return;
