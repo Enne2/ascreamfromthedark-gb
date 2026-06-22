@@ -10,58 +10,94 @@ PALETTE = [
     0, 0, 0        # 3
 ] + [0] * (256 * 3 - 12)
 
-def draw_autotile(draw, y_offset, is_alt, mask):
+def draw_autotile(draw, y_offset, is_alt, mask, is_dark=False):
     # Determine the neighbor fill color
     # Tile 1 (Normal, is_alt=False) neighbors should match Tile 2 (Alt) body color: 1 (Light Gray)
     # Tile 2 (Alt, is_alt=True) neighbors should match Tile 1 (Normal) body color: 0 (White)
-    neighbor_color = 0 if is_alt else 1
-    
-    # 4 corners
-    # Bit 0 (1): Top-Left
-    # Bit 1 (2): Top-Right
-    # Bit 2 (4): Bottom-Left
-    # Bit 3 (8): Bottom-Right
-    
-    tl_color = neighbor_color if (mask & 1) else 3
-    tr_color = neighbor_color if (mask & 2) else 3
-    dl_color = neighbor_color if (mask & 4) else 3
-    dr_color = neighbor_color if (mask & 8) else 3
-    
-    # Draw corners
-    draw.polygon([(0, y_offset), (15, y_offset), (0, y_offset + 7)], fill=tl_color)
-    draw.polygon([(16, y_offset), (31, y_offset), (31, y_offset + 7)], fill=tr_color)
-    draw.polygon([(0, y_offset + 8), (0, y_offset + 15), (15, y_offset + 15)], fill=dl_color)
-    draw.polygon([(31, y_offset + 8), (31, y_offset + 15), (16, y_offset + 15)], fill=dr_color)
-    
-    # Draw the main diamond shape on top
-    points = [(15, y_offset), (31, y_offset + 7), (16, y_offset + 15), (0, y_offset + 8)]
-    inner = [(15, y_offset + 4), (27, y_offset + 7), (16, y_offset + 11), (4, y_offset + 8)]
-    
-    if not is_alt:
-        # Tile 1: Normal floor (body is White, inner is Light Gray)
-        draw.polygon(points, fill=0, outline=2)
-        draw.polygon(inner, fill=1, outline=2)
+    if not is_dark:
+        neighbor_color = 0 if is_alt else 1
+        
+        tl_color = neighbor_color if (mask & 1) else 3
+        tr_color = neighbor_color if (mask & 2) else 3
+        dl_color = neighbor_color if (mask & 4) else 3
+        dr_color = neighbor_color if (mask & 8) else 3
+        
+        # Draw corners
+        draw.polygon([(0, y_offset), (15, y_offset), (0, y_offset + 7)], fill=tl_color)
+        draw.polygon([(16, y_offset), (31, y_offset), (31, y_offset + 7)], fill=tr_color)
+        draw.polygon([(0, y_offset + 8), (0, y_offset + 15), (15, y_offset + 15)], fill=dl_color)
+        draw.polygon([(31, y_offset + 8), (31, y_offset + 15), (16, y_offset + 15)], fill=dr_color)
+        
+        # Draw the main diamond shape on top
+        points = [(15, y_offset), (31, y_offset + 7), (16, y_offset + 15), (0, y_offset + 8)]
+        inner = [(15, y_offset + 4), (27, y_offset + 7), (16, y_offset + 11), (4, y_offset + 8)]
+        
+        if not is_alt:
+            # Tile 1: Normal floor (body is White, inner is Light Gray)
+            draw.polygon(points, fill=0, outline=2)
+            draw.polygon(inner, fill=1, outline=2)
+        else:
+            # Tile 2: Alt floor (body is Light Gray, inner is White)
+            draw.polygon(points, fill=1, outline=2)
+            draw.polygon(inner, fill=0, outline=2)
     else:
-        # Tile 2: Alt floor (body is Light Gray, inner is White)
-        draw.polygon(points, fill=1, outline=2)
-        draw.polygon(inner, fill=0, outline=2)
+        # Darker version: Shift colors down
+        # White (0) -> Light Gray (1)
+        # Light Gray (1) -> Dark Gray (2)
+        # Dark Gray (2) -> Black (3)
+        # Black (3) -> Black (3)
+        neighbor_color = 1 if is_alt else 2
+        
+        tl_color = neighbor_color if (mask & 1) else 3
+        tr_color = neighbor_color if (mask & 2) else 3
+        dl_color = neighbor_color if (mask & 4) else 3
+        dr_color = neighbor_color if (mask & 8) else 3
+        
+        # Draw corners
+        draw.polygon([(0, y_offset), (15, y_offset), (0, y_offset + 7)], fill=tl_color)
+        draw.polygon([(16, y_offset), (31, y_offset), (31, y_offset + 7)], fill=tr_color)
+        draw.polygon([(0, y_offset + 8), (0, y_offset + 15), (15, y_offset + 15)], fill=dl_color)
+        draw.polygon([(31, y_offset + 8), (31, y_offset + 15), (16, y_offset + 15)], fill=dr_color)
+        
+        # Draw the main diamond shape on top
+        points = [(15, y_offset), (31, y_offset + 7), (16, y_offset + 15), (0, y_offset + 8)]
+        inner = [(15, y_offset + 4), (27, y_offset + 7), (16, y_offset + 11), (4, y_offset + 8)]
+        
+        if not is_alt:
+            # Tile 1 Dark: body is Light Gray (1), inner is Dark Gray (2), outline is Black (3)
+            draw.polygon(points, fill=1, outline=3)
+            draw.polygon(inner, fill=2, outline=3)
+        else:
+            # Tile 2 Dark: body is Dark Gray (2), inner is Light Gray (1), outline is Black (3)
+            draw.polygon(points, fill=2, outline=3)
+            draw.polygon(inner, fill=1, outline=3)
 
 def generate_tiles():
-    # 32 variants total:
+    # 64 variants total:
     # 0..15: Tile 1 (Normal Floor) with masks 0..15
     # 16..31: Tile 2 (Alt Floor) with masks 0..15
-    # Height is 8 pixels (black spacer) + 32 variants * 16 pixels = 520 pixels
-    img = Image.new("P", (32, 520), 3)
+    # 32..47: Tile 1 Dark (Normal Floor Dark) with masks 0..15
+    # 48..63: Tile 2 Dark (Alt Floor Dark) with masks 0..15
+    # Height is 8 pixels (black spacer) + 64 variants * 16 pixels = 1032 pixels
+    img = Image.new("P", (32, 1032), 3)
     img.putpalette(PALETTE)
     draw = ImageDraw.Draw(img)
     
     # Draw Tile 1 variants (start at y=8)
     for mask in range(16):
-        draw_autotile(draw, 8 + mask * 16, False, mask)
+        draw_autotile(draw, 8 + mask * 16, False, mask, False)
         
-    # Draw Tile 2 variants (start at y=8 + 256 = 264)
+    # Draw Tile 2 variants (start at y=264)
     for mask in range(16):
-        draw_autotile(draw, 264 + mask * 16, True, mask)
+        draw_autotile(draw, 264 + mask * 16, True, mask, False)
+
+    # Draw Tile 1 Dark variants (start at y=520)
+    for mask in range(16):
+        draw_autotile(draw, 520 + mask * 16, False, mask, True)
+
+    # Draw Tile 2 Dark variants (start at y=776)
+    for mask in range(16):
+        draw_autotile(draw, 776 + mask * 16, True, mask, True)
         
     img.save("tiles.png")
 

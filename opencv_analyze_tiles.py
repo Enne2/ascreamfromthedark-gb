@@ -48,7 +48,7 @@ def main():
     print(f"Detected {glitch_count} rendering glitches (black cutouts/gaps) inside the floor map.")
     
     # Save the marked-up image to the artifacts directory
-    output_path = '/home/enne2/.gemini/antigravity-ide/brain/eebf5acd-ae2e-41bb-858e-6a4a5ca41897/analyzed_tiles.png'
+    output_path = '/home/enne2/.gemini/antigravity-ide/brain/dd9e728a-93c4-49f8-90b6-3f72fcc47f04/analyzed_tiles.png'
     cv2.imwrite(output_path, markup)
     print(f"Saved analysis markup to: {output_path}")
 

@@ -8,7 +8,7 @@
 #include "tiles.h"
 #include "player.h"
 
-#define MAP_SIZE 7
+#define MAP_SIZE 15
 
 uint8_t maze[MAP_SIZE][MAP_SIZE];
 static uint8_t map_buffer[32 * 32];
@@ -37,9 +37,9 @@ static void generate_maze(void) {
     // Clear maze (all 0/walls)
     memset(maze, 0, sizeof(maze));
     
-    // Stack for backtracking (3x3 grid has 9 odd cells max)
-    uint8_t stack_x[9];
-    uint8_t stack_y[9];
+    // Stack for backtracking (7x7 grid of odd cells has 49 cells max)
+    uint8_t stack_x[49];
+    uint8_t stack_y[49];
     uint8_t stack_ptr = 0;
     
     // Start at (1, 1)
@@ -59,7 +59,7 @@ static void generate_maze(void) {
             nx[count] = cx; ny[count] = cy - 2; count++;
         }
         // Down
-        if (cy <= 3 && maze[cy + 2][cx] == 0) {
+        if (cy <= MAP_SIZE - 4 && maze[cy + 2][cx] == 0) {
             nx[count] = cx; ny[count] = cy + 2; count++;
         }
         // Left
@@ -67,7 +67,7 @@ static void generate_maze(void) {
             nx[count] = cx - 2; ny[count] = cy; count++;
         }
         // Right
-        if (cx <= 3 && maze[cy][cx + 2] == 0) {
+        if (cx <= MAP_SIZE - 4 && maze[cy][cx + 2] == 0) {
             nx[count] = cx + 2; ny[count] = cy; count++;
         }
         
@@ -98,15 +98,35 @@ static void generate_maze(void) {
     }
 }
 
-static void draw_map(void) {
+static void draw_map(uint8_t center_x, uint8_t center_y) {
     // Fill entire map with tile index 0 (completely black empty tile)
     memset(map_buffer, 0, sizeof(map_buffer));
     
-    // Draw logical map path tiles
-    for (int8_t ly = 0; ly < MAP_SIZE; ly++) {
-        for (int8_t lx = 0; lx < MAP_SIZE; lx++) {
+    int8_t start_x = center_x - 3;
+    if (start_x < 0) start_x = 0;
+    int8_t end_x = center_x + 3;
+    if (end_x >= MAP_SIZE) end_x = MAP_SIZE - 1;
+    
+    int8_t start_y = center_y - 3;
+    if (start_y < 0) start_y = 0;
+    int8_t end_y = center_y + 3;
+    if (end_y >= MAP_SIZE) end_y = MAP_SIZE - 1;
+    
+    // Draw logical map path tiles in the visible 7x7 window
+    for (int8_t ly = start_y; ly <= end_y; ly++) {
+        for (int8_t lx = start_x; lx <= end_x; lx++) {
             if (maze[ly][lx] == 1) {
-                // Centering math for 7x7 map on 32x32 background map
+                // Calculate Chebyshev distance to center
+                int8_t dx = lx - center_x;
+                int8_t dy = ly - center_y;
+                if (dx < 0) dx = -dx;
+                if (dy < 0) dy = -dy;
+                int8_t dist = (dx > dy) ? dx : dy;
+                
+                // Hide tiles at distance > 3 (Fog of War)
+                if (dist > 3) continue;
+                
+                // Centering math for 15x15 map on 32x32 background map
                 int8_t iso_x = (lx - ly) * 2 + 12; 
                 int8_t iso_y = (lx + ly) * 1 + 2;  
 
@@ -120,7 +140,16 @@ static void draw_map(void) {
                 uint8_t has_br = (lx < MAP_SIZE - 1 && maze[ly][lx + 1] == 1);
                 
                 uint8_t mask = (has_tl ? 1 : 0) | (has_tr ? 2 : 0) | (has_bl ? 4 : 0) | (has_br ? 8 : 0);
-                uint8_t v = is_alt ? (16 + mask) : mask;
+                
+                // Determine variation style based on lighting distance
+                uint8_t v;
+                if (dist == 3) {
+                    // Darker variants (Tile 1 Dark starting at 32, Tile 2 Dark starting at 48)
+                    v = is_alt ? (48 + mask) : (32 + mask);
+                } else {
+                    // Normal variants
+                    v = is_alt ? (16 + mask) : mask;
+                }
 
                 for (uint8_t y = 0; y < 2; y++) {
                     for (uint8_t x = 0; x < 4; x++) {
@@ -175,7 +204,7 @@ void engine_init(void) {
     set_bkg_data(0, tiles_TILE_COUNT, tiles_tiles);
     set_sprite_data(0, player_TILE_COUNT, player_tiles);
 
-    draw_map();
+    draw_map(player_lx, player_ly);
     update_camera();
     update_player_sprite();
 }
@@ -212,6 +241,11 @@ void engine_update(uint8_t keys, uint8_t prev_keys) {
         // Update walk animation frame (alternate frame every 4 ticks)
         update_player_sprite();
         
+        // Update visible tiles (fog of war center) mid-way through movement
+        if (move_progress == 8) {
+            draw_map(target_lx, target_ly);
+        }
+        
         if (move_progress == 16) {
             is_moving = 0;
             player_lx = target_lx;
@@ -223,6 +257,9 @@ void engine_update(uint8_t keys, uint8_t prev_keys) {
             scroll_x = final_px - 64;
             scroll_y = final_py - 72;
             move_bkg(scroll_x, scroll_y);
+            
+            // Draw map at final coordinates
+            draw_map(player_lx, player_ly);
             
             // Set player to idle stand frame
             update_player_sprite();
