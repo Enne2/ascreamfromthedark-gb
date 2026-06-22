@@ -102,17 +102,17 @@ static void draw_map(uint8_t center_x, uint8_t center_y) {
     // Fill entire map with tile index 0 (completely black empty tile)
     memset(map_buffer, 0, sizeof(map_buffer));
     
-    int8_t start_x = center_x - 3;
+    int8_t start_x = center_x - 2;
     if (start_x < 0) start_x = 0;
-    int8_t end_x = center_x + 3;
+    int8_t end_x = center_x + 2;
     if (end_x >= MAP_SIZE) end_x = MAP_SIZE - 1;
     
-    int8_t start_y = center_y - 3;
+    int8_t start_y = center_y - 2;
     if (start_y < 0) start_y = 0;
-    int8_t end_y = center_y + 3;
+    int8_t end_y = center_y + 2;
     if (end_y >= MAP_SIZE) end_y = MAP_SIZE - 1;
     
-    // Draw logical map path tiles in the visible 7x7 window
+    // Draw logical map path tiles in the visible 5x5 window
     for (int8_t ly = start_y; ly <= end_y; ly++) {
         for (int8_t lx = start_x; lx <= end_x; lx++) {
             if (maze[ly][lx] == 1) {
@@ -123,8 +123,8 @@ static void draw_map(uint8_t center_x, uint8_t center_y) {
                 if (dy < 0) dy = -dy;
                 int8_t dist = (dx > dy) ? dx : dy;
                 
-                // Hide tiles at distance > 3 (Fog of War)
-                if (dist > 3) continue;
+                // Hide tiles at distance > 2 (Fog of War)
+                if (dist > 2) continue;
                 
                 // Centering math for 15x15 map on 32x32 background map
                 int8_t iso_x = (lx - ly) * 2 + 12; 
@@ -143,7 +143,7 @@ static void draw_map(uint8_t center_x, uint8_t center_y) {
                 
                 // Determine variation style based on lighting distance
                 uint8_t v;
-                if (dist == 3) {
+                if (dist == 2) {
                     // Darker variants (Tile 1 Dark starting at 32, Tile 2 Dark starting at 48)
                     v = is_alt ? (48 + mask) : (32 + mask);
                 } else {
