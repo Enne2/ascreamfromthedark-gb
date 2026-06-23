@@ -22,11 +22,11 @@ generate_images: $(SCRIPTS_DIR)/generate_assets.py $(SCRIPTS_DIR)/generate_enemy
 # Convert image assets to C source files
 generate_c_assets: generate_images
 	$(PNG2ASSET) $(ASSETS_DIR)/tiles.png -c $(SRC_DIR)/tiles.c -map -bpp 2 -noflip -keep_palette_order
-	$(PNG2ASSET) $(ASSETS_DIR)/player.png -c $(SRC_DIR)/player.c -sw 16 -sh 16 -bpp 2 -noflip -keep_palette_order
-	$(PNG2ASSET) $(ASSETS_DIR)/enemy.png -c $(SRC_DIR)/enemy.c -sw 16 -sh 16 -bpp 2 -noflip -keep_palette_order -sp 0x10
-	$(PNG2ASSET) $(ASSETS_DIR)/gameover.png -c $(SRC_DIR)/gameover.c -bpp 2 -noflip -keep_palette_order
-	$(PNG2ASSET) $(ASSETS_DIR)/victory.png -c $(SRC_DIR)/victory.c -bpp 2 -noflip -keep_palette_order
-	$(PNG2ASSET) $(ASSETS_DIR)/stamina.png -c $(SRC_DIR)/stamina.c -bpp 2 -noflip -keep_palette_order
+	$(PNG2ASSET) $(ASSETS_DIR)/player.png -c $(SRC_DIR)/player.c -sw 16 -sh 16 -bpp 2 -noflip -keep_palette_order -spr8x16
+	$(PNG2ASSET) $(ASSETS_DIR)/enemy.png -c $(SRC_DIR)/enemy.c -sw 16 -sh 16 -bpp 2 -noflip -keep_palette_order -sp 0x10 -spr8x16
+	$(PNG2ASSET) $(ASSETS_DIR)/gameover.png -c $(SRC_DIR)/gameover.c -bpp 2 -noflip -keep_palette_order -spr8x16
+	$(PNG2ASSET) $(ASSETS_DIR)/victory.png -c $(SRC_DIR)/victory.c -bpp 2 -noflip -keep_palette_order -spr8x16
+	$(PNG2ASSET) $(ASSETS_DIR)/stamina.png -c $(SRC_DIR)/stamina.c -bpp 2 -noflip -keep_palette_order -spr8x16
 	$(PNG2ASSET) $(ASSETS_DIR)/title_bg.png -c $(SRC_DIR)/title_bg.c -map -bpp 2 -noflip -keep_palette_order -max_palettes 1
 	$(PNG2ASSET) $(ASSETS_DIR)/stairs_sprite.png -c $(SRC_DIR)/stairs_sprite.c -sw 32 -sh 16 -bpp 2 -noflip -keep_palette_order -spr8x16
 
