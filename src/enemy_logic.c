@@ -65,28 +65,28 @@ void update_enemy_logic(void) {
             int16_t min_dist_sq = (int16_t)dx * dx + (int16_t)dy * dy;
             
             // Controllo 1: Direzione Down-Right (+1 X)
-            if (enemy_lx + 1 < MAP_SIZE && maze[enemy_ly][enemy_lx + 1] == 1) {
+            if (enemy_lx + 1 < MAP_SIZE && maze[enemy_ly][enemy_lx + 1] != 0) {
                 int8_t ndx = (int8_t)player_lx - (int8_t)(enemy_lx + 1);
                 int8_t ndy = (int8_t)player_ly - (int8_t)enemy_ly;
                 int16_t d_sq = (int16_t)ndx * ndx + (int16_t)ndy * ndy;
                 if (d_sq < min_dist_sq) { min_dist_sq = d_sq; best_nx = enemy_lx + 1; best_ny = enemy_ly; }
             }
             // Controllo 2: Direzione Down-Left (+1 Y)
-            if (enemy_ly + 1 < MAP_SIZE && maze[enemy_ly + 1][enemy_lx] == 1) {
+            if (enemy_ly + 1 < MAP_SIZE && maze[enemy_ly + 1][enemy_lx] != 0) {
                 int8_t ndx = (int8_t)player_lx - (int8_t)enemy_lx;
                 int8_t ndy = (int8_t)player_ly - (int8_t)(enemy_ly + 1);
                 int16_t d_sq = (int16_t)ndx * ndx + (int16_t)ndy * ndy;
                 if (d_sq < min_dist_sq) { min_dist_sq = d_sq; best_nx = enemy_lx; best_ny = enemy_ly + 1; }
             }
             // Controllo 3: Direzione Up-Left (-1 X)
-            if (enemy_lx > 0 && maze[enemy_ly][enemy_lx - 1] == 1) {
+            if (enemy_lx > 0 && maze[enemy_ly][enemy_lx - 1] != 0) {
                 int8_t ndx = (int8_t)player_lx - (int8_t)(enemy_lx - 1);
                 int8_t ndy = (int8_t)player_ly - (int8_t)enemy_ly;
                 int16_t d_sq = (int16_t)ndx * ndx + (int16_t)ndy * ndy;
                 if (d_sq < min_dist_sq) { min_dist_sq = d_sq; best_nx = enemy_lx - 1; best_ny = enemy_ly; }
             }
             // Controllo 4: Direzione Up-Right (-1 Y)
-            if (enemy_ly > 0 && maze[enemy_ly - 1][enemy_lx] == 1) {
+            if (enemy_ly > 0 && maze[enemy_ly - 1][enemy_lx] != 0) {
                 int8_t ndx = (int8_t)player_lx - (int8_t)enemy_lx;
                 int8_t ndy = (int8_t)player_ly - (int8_t)(enemy_ly - 1);
                 int16_t d_sq = (int16_t)ndx * ndx + (int16_t)ndy * ndy;
