@@ -169,6 +169,9 @@ void engine_update(uint8_t keys, uint8_t prev_keys) {
                 } else if (game_over == 2) {
                     // Mostra la schermata "Going Deeper"
                     HIDE_SPRITES;
+                    // Reset scroll so the full screen image is aligned
+                    SCX_REG = 0;
+                    SCY_REG = 0;
                     set_bkg_data(0, next_level_TILE_COUNT, next_level_tiles);
                     set_bkg_tiles(0, 0, 20, 18, next_level_map);
                 }
