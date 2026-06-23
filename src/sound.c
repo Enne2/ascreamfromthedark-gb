@@ -27,6 +27,7 @@ static volatile uint8_t title_music_step = 0;
 
 // Note frequencies calculation: (2048 - (131072 / frequency))
 #define R 0
+#define N_C2 44
 #define N_E2 458
 #define N_F2 547
 #define N_G2 742
@@ -102,8 +103,8 @@ const uint16_t ch1_seq[128] = {
     N_A2, N_A3, N_CS4, N_E4, N_A2, R, N_D3, R
 };
 
-// "Going Deeper" mysterious melody (80 steps)
-const uint16_t next_level_seq[80] = {
+// "Going Deeper" mysterious melody (96 steps)
+const uint16_t next_level_seq[96] = {
     // 1. Am (Relief but somewhat somber)
     N_A3, N_C4, N_E4, N_A4, N_E4, N_C4, N_A3, R,
     N_A3, N_C4, N_E4, N_A4, N_E4, N_C4, N_A3, R,
@@ -118,7 +119,10 @@ const uint16_t next_level_seq[80] = {
     N_E3, N_GS3, N_B3, N_D4, N_B3, N_GS3, N_E3, R,
     // 5. C augmented (Eerie, strange descent)
     N_C3, N_E3, N_GS3, N_C4, N_GS3, N_E3, N_C3, R,
-    N_C3, N_E3, N_GS3, N_C4, N_GS3, N_E3, N_C3, R
+    N_C3, N_E3, N_GS3, N_C4, N_GS3, N_E3, N_C3, R,
+    // 6. Deep descending finish (Fading into the abyss)
+    N_G2, N_E3, N_C3, R, N_E2, N_C3, N_G2, R,
+    N_C2, R, R, R, R, R, R, R
 };
 
 const uint16_t ch2_seq[128] = {
@@ -237,19 +241,19 @@ void play_gameover_step(uint8_t step) {
 }
 
 void play_victory_step(uint8_t step) {
-    if (step < 80) {
+    if (step < 96) {
         uint16_t n1 = next_level_seq[step];
         if (n1 != R) {
             NR10_REG = 0x00;
             NR11_REG = 0x80; // 50% duty
-            NR12_REG = 0x83; // mystery fade
+            NR12_REG = 0xC5; // louder, slightly longer fade
             NR13_REG = n1 & 0xFF;
             NR14_REG = (n1 >> 8) | 0x80;
             
             // Add a bass note on the first beat of each chord (every 16 steps)
             if (step % 16 == 0) {
                 NR21_REG = 0x80;
-                NR22_REG = 0xA7; // long fade
+                NR22_REG = 0xC7; // louder bass, long fade
                 uint16_t bn = n1 / 2; // octave lower
                 NR23_REG = bn & 0xFF;
                 NR24_REG = (bn >> 8) | 0x80;
@@ -305,7 +309,7 @@ void play_music_tick(void) {
                 victory_music_timer++;
                 if (victory_music_timer >= 15) { // 15 frames per note = 4 notes/sec
                     victory_music_timer = 0;
-                    if (victory_music_step < 80) {
+                    if (victory_music_step < 96) {
                         play_victory_step(victory_music_step);
                         victory_music_step++;
                     }
