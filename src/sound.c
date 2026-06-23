@@ -102,12 +102,23 @@ const uint16_t ch1_seq[128] = {
     N_A2, N_A3, N_CS4, N_E4, N_A2, R, N_D3, R
 };
 
-// Victory Arpeggio (fast ascending)
-const uint16_t victory_seq[16] = {
-    N_C4, N_E4, N_G4, N_C5,
-    N_E5, N_G5, 1950, 1950,
-    N_C5, N_E5, N_G5, 1950,
-    1950, 1950, 1950, R
+// "Going Deeper" mysterious melody (80 steps)
+const uint16_t next_level_seq[80] = {
+    // 1. Am (Relief but somewhat somber)
+    N_A3, N_C4, N_E4, N_A4, N_E4, N_C4, N_A3, R,
+    N_A3, N_C4, N_E4, N_A4, N_E4, N_C4, N_A3, R,
+    // 2. Fmaj7 (Mystery and opening up)
+    N_F3, N_A3, N_C4, N_E4, N_C4, N_A3, N_F3, R,
+    N_F3, N_A3, N_C4, N_E4, N_C4, N_A3, N_F3, R,
+    // 3. Dm (Getting darker)
+    N_D3, N_F3, N_A3, N_D4, N_A3, N_F3, N_D3, R,
+    N_D3, N_F3, N_A3, N_D4, N_A3, N_F3, N_D3, R,
+    // 4. E7 (Tension, unresolved)
+    N_E3, N_GS3, N_B3, N_D4, N_B3, N_GS3, N_E3, R,
+    N_E3, N_GS3, N_B3, N_D4, N_B3, N_GS3, N_E3, R,
+    // 5. C augmented (Eerie, strange descent)
+    N_C3, N_E3, N_GS3, N_C4, N_GS3, N_E3, N_C3, R,
+    N_C3, N_E3, N_GS3, N_C4, N_GS3, N_E3, N_C3, R
 };
 
 const uint16_t ch2_seq[128] = {
@@ -226,14 +237,23 @@ void play_gameover_step(uint8_t step) {
 }
 
 void play_victory_step(uint8_t step) {
-    if (step < 16) {
-        uint16_t n1 = victory_seq[step];
+    if (step < 80) {
+        uint16_t n1 = next_level_seq[step];
         if (n1 != R) {
             NR10_REG = 0x00;
             NR11_REG = 0x80; // 50% duty
-            NR12_REG = 0xA7; // bright loud fade
+            NR12_REG = 0x83; // mystery fade
             NR13_REG = n1 & 0xFF;
             NR14_REG = (n1 >> 8) | 0x80;
+            
+            // Add a bass note on the first beat of each chord (every 16 steps)
+            if (step % 16 == 0) {
+                NR21_REG = 0x80;
+                NR22_REG = 0xA7; // long fade
+                uint16_t bn = n1 / 2; // octave lower
+                NR23_REG = bn & 0xFF;
+                NR24_REG = (bn >> 8) | 0x80;
+            }
         }
     }
 }
@@ -281,11 +301,11 @@ void play_music_tick(void) {
                         gameover_music_step++;
                     }
                 }
-            } else if (game_over == 2) { // Victory (Portal)
+            } else if (game_over == 2) { // Next Level (Going Deeper)
                 victory_music_timer++;
-                if (victory_music_timer >= 8) { // faster tempo
+                if (victory_music_timer >= 15) { // 15 frames per note = 4 notes/sec
                     victory_music_timer = 0;
-                    if (victory_music_step < 16) {
+                    if (victory_music_step < 80) {
                         play_victory_step(victory_music_step);
                         victory_music_step++;
                     }

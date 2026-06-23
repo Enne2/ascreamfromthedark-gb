@@ -17,7 +17,7 @@
 #include "player.h"
 #include "enemy.h"
 #include "gameover.h"
-#include "victory.h"
+#include "next_level.h"
 #include "stamina.h"
 #include "title_bg.h"
 
@@ -94,7 +94,6 @@ void engine_init(void) {
     set_sprite_data(0, player_TILE_COUNT, player_tiles);
     set_sprite_data(player_TILE_COUNT, enemy_TILE_COUNT, enemy_tiles);
     set_sprite_data(player_TILE_COUNT + enemy_TILE_COUNT, gameover_TILE_COUNT, gameover_tiles);
-    set_sprite_data(player_TILE_COUNT + enemy_TILE_COUNT + gameover_TILE_COUNT, victory_TILE_COUNT, victory_tiles);
     // Load stamina_tiles AFTER the background tiles to prevent VRAM overlap in the shared block (indices > 127)
     set_sprite_data(tiles_TILE_COUNT, stamina_TILE_COUNT * 2, stamina_tiles);
 
@@ -163,9 +162,16 @@ void engine_update(uint8_t keys, uint8_t prev_keys) {
             game_over_timer--;
             // Quando scade il timer drammatico...
             if (game_over_timer == 0) {
-                // ...Svuota lo schermo
-                memset(map_buffer, 0, sizeof(map_buffer));
-                set_bkg_tiles(0, 0, 32, 32, map_buffer);
+                if (game_over == 1) {
+                    // ...Svuota lo schermo
+                    memset(map_buffer, 0, sizeof(map_buffer));
+                    set_bkg_tiles(0, 0, 32, 32, map_buffer);
+                } else if (game_over == 2) {
+                    // Mostra la schermata "Going Deeper"
+                    HIDE_SPRITES;
+                    set_bkg_data(0, next_level_TILE_COUNT, next_level_tiles);
+                    set_bkg_tiles(0, 0, 20, 18, next_level_map);
+                }
                 
                 // Imposta i timer audio per far iniziare la musica finale dal modulo sound.c
                 // La musica verrà suonata dall'interrupt play_music_tick in background.
@@ -180,11 +186,9 @@ void engine_update(uint8_t keys, uint8_t prev_keys) {
                 }
             }
         } else {
-            // Dopo il timer, disegna i metasprite di VITTORIA o GAME OVER fissi in mezzo allo schermo
+            // Dopo il timer, disegna i metasprite di GAME OVER fissi in mezzo allo schermo
             if (game_over == 1) {
                 move_metasprite(gameover_metasprites[0], player_TILE_COUNT + enemy_TILE_COUNT, 8, 88, 120);
-            } else if (game_over == 2) {
-                move_metasprite(victory_metasprites[0], player_TILE_COUNT + enemy_TILE_COUNT + gameover_TILE_COUNT, 8, 88, 120);
             }
             
             // Il giocatore rimane visibile al centro, il nemico scompare se vinto o appare se sconfitto.
@@ -211,7 +215,7 @@ void engine_update(uint8_t keys, uint8_t prev_keys) {
             if ((keys & J_START) && !(prev_keys & J_START)) {
                 // Nasconde la grafica testuale e ricarica tutto l'engine
                 move_metasprite(gameover_metasprites[0], player_TILE_COUNT + enemy_TILE_COUNT, 8, 0, 0);
-                move_metasprite(victory_metasprites[0], player_TILE_COUNT + enemy_TILE_COUNT + gameover_TILE_COUNT, 8, 0, 0);
+                SHOW_SPRITES;
                 engine_init();
             }
         }
