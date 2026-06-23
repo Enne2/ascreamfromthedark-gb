@@ -11,7 +11,7 @@ assets: generate_assets.py
 	$(PNG2ASSET) gameover.png -c gameover.c -bpp 2 -noflip -keep_palette_order
 	$(PNG2ASSET) stamina.png -c stamina.c -bpp 2 -noflip -keep_palette_order
 
-	$(PNG2ASSET) title_bg.png -c title_bg.c -map -bpp 2 -noflip -keep_palette_order
+	$(PNG2ASSET) title_bg.png -c title_bg.c -map -bpp 2 -noflip -keep_palette_order -max_palettes 1
 
 hello_iso.gb: assets main.c engine.c
 	$(LCC) -Wa-l -Wl-m -Wl-j -o hello_iso.gb main.c engine.c tiles.c player.c gameover.c stamina.c title_bg.c
