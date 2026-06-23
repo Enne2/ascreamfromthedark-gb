@@ -57,7 +57,8 @@ void update_stamina_display(void) {
     uint8_t num_pixels = temp / 100;
     
     // Offset di base nella VRAM dove sono caricati i tile della stamina
-    uint8_t base_tile = player_TILE_COUNT + enemy_TILE_COUNT + gameover_TILE_COUNT + victory_TILE_COUNT; // 44
+    // Caricato a partire da tiles_TILE_COUNT per non sovrascrivere la VRAM condivisa (>=128)
+    uint8_t base_tile = tiles_TILE_COUNT;
     
     for (uint8_t i = 0; i < 5; i++) {
         uint8_t tile_idx;

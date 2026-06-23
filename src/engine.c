@@ -95,7 +95,8 @@ void engine_init(void) {
     set_sprite_data(player_TILE_COUNT, enemy_TILE_COUNT, enemy_tiles);
     set_sprite_data(player_TILE_COUNT + enemy_TILE_COUNT, gameover_TILE_COUNT, gameover_tiles);
     set_sprite_data(player_TILE_COUNT + enemy_TILE_COUNT + gameover_TILE_COUNT, victory_TILE_COUNT, victory_tiles);
-    set_sprite_data(player_TILE_COUNT + enemy_TILE_COUNT + gameover_TILE_COUNT + victory_TILE_COUNT, stamina_TILE_COUNT * 2, stamina_tiles);
+    // Load stamina_tiles AFTER the background tiles to prevent VRAM overlap in the shared block (indices > 127)
+    set_sprite_data(tiles_TILE_COUNT, stamina_TILE_COUNT * 2, stamina_tiles);
 
     // SPAWN DEL GIOCATORE
     player_lx = 1;
