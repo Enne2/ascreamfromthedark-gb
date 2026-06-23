@@ -2,25 +2,56 @@ GBDK_HOME = /home/enne2/.local/gbdk
 LCC = $(GBDK_HOME)/bin/lcc
 PNG2ASSET = $(GBDK_HOME)/bin/png2asset
 
-all: hello_iso.gb test_gameover.gb
+# Source and build directories
+SRC_DIR = src
+ASSETS_DIR = assets
+SCRIPTS_DIR = scripts
+BUILD_DIR = build
 
-assets: generate_assets.py
-	python3 generate_assets.py
-	$(PNG2ASSET) tiles.png -c tiles.c -map -bpp 2 -noflip -keep_palette_order
-	$(PNG2ASSET) player.png -c player.c -sw 16 -sh 16 -bpp 2 -noflip -keep_palette_order
-	$(PNG2ASSET) gameover.png -c gameover.c -bpp 2 -noflip -keep_palette_order
-	$(PNG2ASSET) stamina.png -c stamina.c -bpp 2 -noflip -keep_palette_order
+# C source files
+SRCS = $(SRC_DIR)/main.c $(SRC_DIR)/engine.c $(SRC_DIR)/globals.c $(SRC_DIR)/maze.c $(SRC_DIR)/sound.c $(SRC_DIR)/render.c $(SRC_DIR)/player_logic.c $(SRC_DIR)/enemy_logic.c $(SRC_DIR)/tiles.c $(SRC_DIR)/player.c $(SRC_DIR)/enemy.c $(SRC_DIR)/gameover.c $(SRC_DIR)/victory.c $(SRC_DIR)/stamina.c $(SRC_DIR)/title_bg.c $(SRC_DIR)/stairs_sprite.c
 
-	$(PNG2ASSET) title_bg.png -c title_bg.c -map -bpp 2 -noflip -keep_palette_order -max_palettes 1
+all: $(BUILD_DIR)/hello_iso.gb $(BUILD_DIR)/test_gameover.gb $(BUILD_DIR)/test_sprite_stairs.gb
 
-hello_iso.gb: assets main.c engine.c
-	$(LCC) -Wa-l -Wl-m -Wl-j -o hello_iso.gb main.c engine.c tiles.c player.c gameover.c stamina.c title_bg.c
+# Generate image assets
+generate_images: $(SCRIPTS_DIR)/generate_assets.py $(SCRIPTS_DIR)/generate_enemy.py $(SCRIPTS_DIR)/generate_stairs_sprite.py
+	cd $(ASSETS_DIR) && python3 ../$(SCRIPTS_DIR)/generate_assets.py
+	cd $(ASSETS_DIR) && python3 ../$(SCRIPTS_DIR)/generate_enemy.py
+	cd $(ASSETS_DIR) && python3 ../$(SCRIPTS_DIR)/generate_stairs_sprite.py
 
-test_gameover.gb: assets test_gameover_render.c
-	$(LCC) -Wa-l -Wl-m -Wl-j -o test_gameover.gb test_gameover_render.c player.c gameover.c stamina.c
+# Convert image assets to C source files
+generate_c_assets: generate_images
+	$(PNG2ASSET) $(ASSETS_DIR)/tiles.png -c $(SRC_DIR)/tiles.c -map -bpp 2 -noflip -keep_palette_order
+	$(PNG2ASSET) $(ASSETS_DIR)/player.png -c $(SRC_DIR)/player.c -sw 16 -sh 16 -bpp 2 -noflip -keep_palette_order
+	$(PNG2ASSET) $(ASSETS_DIR)/enemy.png -c $(SRC_DIR)/enemy.c -sw 16 -sh 16 -bpp 2 -noflip -keep_palette_order -sp 0x10
+	$(PNG2ASSET) $(ASSETS_DIR)/gameover.png -c $(SRC_DIR)/gameover.c -bpp 2 -noflip -keep_palette_order
+	$(PNG2ASSET) $(ASSETS_DIR)/victory.png -c $(SRC_DIR)/victory.c -bpp 2 -noflip -keep_palette_order
+	$(PNG2ASSET) $(ASSETS_DIR)/stamina.png -c $(SRC_DIR)/stamina.c -bpp 2 -noflip -keep_palette_order
+	$(PNG2ASSET) $(ASSETS_DIR)/title_bg.png -c $(SRC_DIR)/title_bg.c -map -bpp 2 -noflip -keep_palette_order -max_palettes 1
+	$(PNG2ASSET) $(ASSETS_DIR)/stairs_sprite.png -c $(SRC_DIR)/stairs_sprite.c -sw 32 -sh 16 -bpp 2 -noflip -keep_palette_order -spr8x16
+
+# Main ROM target
+$(BUILD_DIR)/hello_iso.gb: generate_c_assets $(SRCS)
+	mkdir -p $(BUILD_DIR)
+	$(LCC) $(LCCFLAGS) -o $(BUILD_DIR)/hello_iso.gb $(SRCS)
+
+# Test ROM target
+$(BUILD_DIR)/test_gameover.gb: generate_c_assets $(SRC_DIR)/test_gameover_render.c
+	mkdir -p $(BUILD_DIR)
+	$(LCC) -Wa-l -Wl-m -Wl-j -o $(BUILD_DIR)/test_gameover.gb $(SRC_DIR)/test_gameover_render.c $(SRC_DIR)/player.c $(SRC_DIR)/enemy.c $(SRC_DIR)/gameover.c $(SRC_DIR)/stamina.c
+
+# Sprite Stairs Test ROM target
+$(BUILD_DIR)/test_sprite_stairs.gb: generate_c_assets $(SRCS)
+	mkdir -p $(BUILD_DIR)
+	$(LCC) -DUSE_SPRITE_STAIRS $(LCCFLAGS) -o $(BUILD_DIR)/test_sprite_stairs.gb $(SRCS)
 
 clean:
-	rm -f *.o *.lst *.map *.gb *.ihx *.sym *.cdb *.adb *.asm gameover.c gameover.h gameover.png player.png tiles.png player.c player.h tiles.c tiles.h test_gameover_render.o player.o gameover.o stamina.c stamina.h stamina.png stamina.o title_bg.c title_bg.h title_bg.o
-
-
-
+	rm -rf $(BUILD_DIR)/*
+	rm -f $(SRC_DIR)/tiles.c $(SRC_DIR)/tiles.h
+	rm -f $(SRC_DIR)/player.c $(SRC_DIR)/player.h
+	rm -f $(SRC_DIR)/enemy.c $(SRC_DIR)/enemy.h
+	rm -f $(SRC_DIR)/gameover.c $(SRC_DIR)/gameover.h
+	rm -f $(SRC_DIR)/victory.c $(SRC_DIR)/victory.h
+	rm -f $(SRC_DIR)/stamina.c $(SRC_DIR)/stamina.h
+	rm -f $(SRC_DIR)/title_bg.c $(SRC_DIR)/title_bg.h
+	rm -f $(SRC_DIR)/stairs_sprite.c $(SRC_DIR)/stairs_sprite.h
