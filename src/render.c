@@ -9,9 +9,6 @@
 #include "victory.h"
 #include "stamina.h"
 #include "maze.h"
-#ifdef USE_SPRITE_STAIRS
-#include "stairs_sprite.h"
-#endif
 
 uint8_t get_tile_state(int8_t cx, int8_t cy, int8_t lx, int8_t ly) {
     if (lx < 0 || lx >= MAP_SIZE || ly < 0 || ly >= MAP_SIZE) return 0;
@@ -121,11 +118,7 @@ void draw_map(uint8_t center_x, uint8_t center_y) {
     // Passata 1: Pavimenti normali
     for (int8_t ly = start_y; ly <= end_y; ly++) {
         for (int8_t lx = start_x; lx <= end_x; lx++) {
-#ifdef USE_SPRITE_STAIRS
-            if (maze[ly][lx] == 1 || maze[ly][lx] == 2) {
-#else
             if (maze[ly][lx] == 1) {
-#endif
                 // Distanza di Chebyshev dal giocatore
                 int8_t dx = lx - center_x;
                 int8_t dy = ly - center_y;
@@ -162,7 +155,6 @@ void draw_map(uint8_t center_x, uint8_t center_y) {
         }
     }
 
-#ifndef USE_SPRITE_STAIRS
     // Passata 2: Scala della Vittoria (disegnata sempre sopra)
     for (int8_t ly = start_y; ly <= end_y; ly++) {
         for (int8_t lx = start_x; lx <= end_x; lx++) {
@@ -204,7 +196,6 @@ void draw_map(uint8_t center_x, uint8_t center_y) {
             }
         }
     }
-#endif
     
     update_stamina_display();
     
@@ -229,27 +220,6 @@ void update_camera(void) {
     
     // Comando hardware GBDK per scrollare il livello Background
     move_bkg(scroll_x, scroll_y);
-
-#ifdef USE_SPRITE_STAIRS
-    // Calcola e posiziona lo sprite delle scale
-    int16_t stairs_px = (stairs_lx - stairs_ly) * 16 + 96;
-    int16_t stairs_py = (stairs_lx + stairs_ly) * 8 + 16;
-    int16_t stairs_screen_x = ((stairs_px - scroll_x) & 255) + 8; // Offset per sprite
-    int16_t stairs_screen_y = ((stairs_py - scroll_y) & 255) + 16;
-
-    int8_t dx = (int8_t)stairs_lx - (int8_t)player_lx;
-    int8_t dy = (int8_t)stairs_ly - (int8_t)player_ly;
-    if (dx < 0) dx = -dx;
-    if (dy < 0) dy = -dy;
-    uint8_t dist = (dx > dy) ? dx : dy;
-
-    // Se le scale sono visibili (dist <= 2), disegnale, altrimenti nascondile
-    if (dist <= 2 && stairs_screen_x >= -32 && stairs_screen_x <= 168 && stairs_screen_y >= -16 && stairs_screen_y <= 152) {
-        move_metasprite(stairs_sprite_metasprites[0], player_TILE_COUNT + enemy_TILE_COUNT + gameover_TILE_COUNT + victory_TILE_COUNT + stamina_TILE_COUNT * 2, 12, stairs_screen_x, stairs_screen_y - 8);
-    } else {
-        move_metasprite(stairs_sprite_metasprites[0], player_TILE_COUNT + enemy_TILE_COUNT + gameover_TILE_COUNT + victory_TILE_COUNT + stamina_TILE_COUNT * 2, 12, 0, 0);
-    }
-#endif
 }
 
 /**

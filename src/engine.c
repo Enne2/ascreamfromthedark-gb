@@ -20,9 +20,6 @@
 #include "victory.h"
 #include "stamina.h"
 #include "title_bg.h"
-#ifdef USE_SPRITE_STAIRS
-#include "stairs_sprite.h"
-#endif
 
 /**
  * Inizializza la schermata del titolo
@@ -99,9 +96,6 @@ void engine_init(void) {
     set_sprite_data(player_TILE_COUNT + enemy_TILE_COUNT, gameover_TILE_COUNT, gameover_tiles);
     set_sprite_data(player_TILE_COUNT + enemy_TILE_COUNT + gameover_TILE_COUNT, victory_TILE_COUNT, victory_tiles);
     set_sprite_data(player_TILE_COUNT + enemy_TILE_COUNT + gameover_TILE_COUNT + victory_TILE_COUNT, stamina_TILE_COUNT * 2, stamina_tiles);
-#ifdef USE_SPRITE_STAIRS
-    set_sprite_data(player_TILE_COUNT + enemy_TILE_COUNT + gameover_TILE_COUNT + victory_TILE_COUNT + stamina_TILE_COUNT * 2, stairs_sprite_TILE_COUNT, stairs_sprite_tiles);
-#endif
 
     // SPAWN DEL GIOCATORE
     player_lx = 1;
@@ -121,13 +115,6 @@ void engine_init(void) {
             if (found) break;
         }
     }
-
-#ifdef USE_SPRITE_STAIRS
-    // HARDCODE STAIRS FOR TESTING
-    stairs_lx = player_lx + 1;
-    stairs_ly = player_ly;
-    maze[stairs_ly][stairs_lx] = 2;
-#endif
 
     // SPAWN DEL NEMICO
     // Cerca randomicamente un punto lontano almeno 3 celle dal giocatore
