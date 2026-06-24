@@ -18,12 +18,29 @@ static void ending_puttext(uint8_t col, uint8_t row, const char *s) {
     }
 }
 
+// Main loop sequencer: drives the finale music directly, bypassing play_music_tick
+// (which would otherwise play the gameplay track or other branches).
+static uint8_t finale_step = 0;
+static uint8_t finale_timer = 0;
+#define FINALE_PERIOD 14  // frames per note (~4 notes/sec)
+
+static void drive_finale(void) {
+    finale_timer++;
+    if (finale_timer >= FINALE_PERIOD) {
+        finale_timer = 0;
+        if (finale_step < 192) {
+            play_finale_step(finale_step);
+            finale_step++;
+        }
+    }
+}
+
 void main(void) {
     SPRITES_8x16;
 
     OBP0_REG = 0xE4;
     OBP1_REG = 0x1B;
-    BGP_REG = 0x1B;  // inverted palette: dark bg, light text
+    BGP_REG = 0x1B;
 
     memset(map_buffer, 0, sizeof(map_buffer));
     set_bkg_tiles(0, 0, 32, 32, map_buffer);
@@ -40,17 +57,12 @@ void main(void) {
     ending_puttext(5, 14, "GAME OVER");
     set_bkg_tiles(0, 0, 32, 32, map_buffer);
 
+    // Init audio for the finale
     NR52_REG = 0x80;
     NR50_REG = 0x77;
     NR51_REG = 0xFF;
-    sound_reset_music_state();
+    // Do NOT register play_music_tick as VBL — we drive the finale from main loop.
     remove_VBL(play_music_tick);
-    add_VBL(play_music_tick);
-
-    // Trigger the finale music sequencer immediately (skip the 30-frame timer
-    // that the main game uses; here we want the music from frame 0).
-    game_over = 3;
-    game_over_timer = 0;
 
     SHOW_BKG;
     SHOW_SPRITES;
@@ -59,6 +71,7 @@ void main(void) {
     uint8_t prev_keys = 0;
     while (1) {
         wait_vbl_done();
+        drive_finale();
         uint8_t keys = joypad();
         if ((keys & J_START) && !(prev_keys & J_START)) {
             level = 1;
