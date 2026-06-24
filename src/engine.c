@@ -225,12 +225,11 @@ void engine_update(uint8_t keys, uint8_t prev_keys) {
 
             // Attende la pressione di START per riavviare
             if ((keys & J_START) && !(prev_keys & J_START)) {
-                // Nasconde la grafica testuale e ricarica tutto l'engine
-                // Vittoria (Going Deeper) -> livello successivo; Sconfitta -> nuova partita dal livello 1.
+                // Nasconde la grafica testuale e ricarica tutto l'engine.
+                // Vittoria (Going Deeper) -> livello successivo.
+                // Sconfitta -> si ricomincia dallo stesso livello raggiunto (non si azzera).
                 if (game_over == 2) {
                     level++;
-                } else {
-                    level = 1;
                 }
                 move_metasprite(gameover_metasprites[0], player_TILE_COUNT + enemy_TILE_COUNT, 8, 0, 0);
                 SHOW_SPRITES;

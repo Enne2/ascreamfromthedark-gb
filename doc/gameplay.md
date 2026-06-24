@@ -37,6 +37,6 @@ Se la Stamina scende sotto 10, B+direzione **ripiega silenziosamente su camminat
 
 ## Progressione dei Livelli
 
-Il gioco parte dal **livello 1**. Raggiungere la botola (casella traguardo) significa "sprofondare più giù" (*Going Deeper*): alla pressione di START il livello viene **incrementato** e viene generato un nuovo labirinto. La sconfitta (cattura da parte del fantasma) riporta invece al **livello 1**.
+Il gioco parte dal **livello 1**. Raggiungere la botola (casella traguardo) significa "sprofondare più giù" (*Going Deeper*): alla pressione di START il livello viene **incrementato** e viene generato un nuovo labirinto. In caso di sconfitta (cattura da parte del fantasma) si **ricomincia dallo stesso livello raggiunto**: il contatore non si azzera, solo il passaggio per il titolo (nuova partita) riparte da 1.
 
 L'indicatore `L<n>` è mostrato in **alto a sinistra** tramite tre sprite hardware (OAM ID 23–25), disegnati dall'asset `level.png` (11 glifi 8x16: 'L', '0'–'9'). Le decine vengono mostrate solo dal livello 10 in poi (sotto, lo sprite decine è spostato fuori schermo). Come la barra stamina (in alto a destra), l'indicatore è a coordinate-schermo fisse e indipendente dallo scroll isometrico, e viene nascosto durante il game over e sul titolo. La base VRAM dei glifi è allineata a un indice **pari** perché in modalità sprite 8x16 l'hardware ignora il bit meno significativo dell'indice tile.

@@ -69,7 +69,7 @@ Camera centrata: `scroll_x = px - 64`, `scroll_y = py - 72` (160×144 display �
 - **Stamina**: ricarica 1 punto/s. Barra UI a 5 sprite (ID 18–22) in alto a destra.
 
 ### 3.3b Progressione livelli (`globals.c` + `engine.c` + `render.c`)
-- Variabile globale `level` (parte da 1). Il titolo→gioco la azzera a 1 (`main.c`); raggiungere la botola (vittoria, `game_over==2`) e premere START fa `level++` prima di `engine_init()` (nuovo labirinto); la sconfitta (`game_over==1`) + START fa `level = 1`.
+- Variabile globale `level` (parte da 1). Il titolo→gioco la azzera a 1 (`main.c`); raggiungere la botola (vittoria, `game_over==2`) e premere START fa `level++` prima di `engine_init()` (nuovo labirinto); la sconfitta (`game_over==1`) + START **non azzera** il livello: si ricomincia dall'ultimo raggiunto (nuova mappa, stesso `level`).
 - Indicatore HUD `L<n>` in alto a sinistra via 3 sprite (OAM ID 23–25), disegnati dall'asset `level.png` (11 glifi 8x16: 'L', '0'–'9') generato da `scripts/generate_level.py` e convertito con `png2asset -keep_duplicate_tiles` (senza deduplica, così il glifo di ordine i occupa i tile 2i/2i+1 in ordine prevedibile).
 - **VRAM**: i glifi sono caricati a `LEVEL_SPRITE_BASE = allineamento-pari-di (tiles_TILE_COUNT + stamina_TILE_COUNT*2)` (~204) — base PARI perché in modalità 8x16 l'hardware ignora il LSB dell'indice tile; e disgiunta dal blocco tile del background e dalla stamina (stesso workaround del commit 93deb35). `update_level_display()` viene chiamata ogni frame in `engine_update` e si nasconde da sola quando `game_over` è attivo.
 
