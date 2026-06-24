@@ -33,9 +33,10 @@ static uint8_t das_active = 0;
  */
 void update_player_movement(uint8_t keys, uint8_t prev_keys) {
     // --- Gestione della Stamina ---
-    // Ricarica la stamina di 1 punto al secondo (60 frames su Game Boy)
+    // Ricarica la stamina di 1 punto ogni `stamina_recharge_rate` frame (1/s al livello 1,
+    // piu' lento ai livelli alti). `stamina_recharge_rate` e' impostato in engine_init.
     stamina_recharge_timer++;
-    if (stamina_recharge_timer >= 60) {
+    if (stamina_recharge_timer >= stamina_recharge_rate) {
         stamina_recharge_timer = 0;
         if (stamina < 100) {
             stamina++;
@@ -87,7 +88,8 @@ void update_player_movement(uint8_t keys, uint8_t prev_keys) {
             
             // Controllo Casella Vittoria (ID 2)
             if (maze[player_ly][player_lx] == 2) {
-                game_over = 2; // Stato 2 = Vittoria
+                // Livello 8 completato -> finale (gioco finito); altrimenti Going Deeper (lvl successivo).
+                game_over = (level >= 8) ? 3 : 2;
                 game_over_timer = 30; // Piccolo ritardo prima che la scena cambi
                 update_stamina_display();
                 

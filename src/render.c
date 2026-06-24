@@ -18,8 +18,8 @@ uint8_t get_tile_state(int8_t cx, int8_t cy, int8_t lx, int8_t ly) {
     if (dx < 0) dx = -dx;
     if (dy < 0) dy = -dy;
     int8_t dist = (dx > dy) ? dx : dy;
-    if (dist > 2) return 0;
-    if (dist == 2) return 2;
+    if (dist > (int8_t)fog_radius) return 0;
+    if (dist == (int8_t)fog_radius) return 2;
     return 1;
 }
 
@@ -146,15 +146,15 @@ void draw_map(uint8_t center_x, uint8_t center_y) {
     // Svuotiamo l'intero buffer della mappa con l'indice 0 (casella nera vuota)
     memset(map_buffer, 0, sizeof(map_buffer));
     
-    // Calcoliamo la "finestra" di mappa 5x5 da processare (per ottimizzazione, ignoriamo la mappa intera)
-    int8_t start_x = center_x - 2;
+    // Calcoliamo la "finestra" di mappa (2r+1 x 2r+1) da processare (fog_radius)
+    int8_t start_x = center_x - fog_radius;
     if (start_x < 0) start_x = 0;
-    int8_t end_x = center_x + 2;
+    int8_t end_x = center_x + fog_radius;
     if ((uint8_t)end_x >= map_size) end_x = map_size - 1;
     
-    int8_t start_y = center_y - 2;
+    int8_t start_y = center_y - fog_radius;
     if (start_y < 0) start_y = 0;
-    int8_t end_y = center_y + 2;
+    int8_t end_y = center_y + fog_radius;
     if ((uint8_t)end_y >= map_size) end_y = map_size - 1;
     
     // Processiamo la mappa in DUE passate per risolvere il problema dell'overlapping isometrico.
@@ -175,7 +175,7 @@ void draw_map(uint8_t center_x, uint8_t center_y) {
                 if (dy < 0) dy = -dy;
                 int8_t dist = (dx > dy) ? dx : dy;
 
-                if (dist > 2) continue;
+                if (dist > (int8_t)fog_radius) continue;
 
                 int8_t iso_x = (lx - ly) * 2 + 12;
                 int8_t iso_y = (lx + ly) * 1 + 2;
@@ -186,7 +186,7 @@ void draw_map(uint8_t center_x, uint8_t center_y) {
                 uint8_t mask = state_tl + state_tr * 3;
 
                 uint8_t v;
-                if (dist == 2) {
+                if (dist == (int8_t)fog_radius) {
                     v = is_alt ? (27 + mask) : (18 + mask);
                 } else {
                     v = is_alt ? (9 + mask) : mask;
@@ -214,7 +214,7 @@ void draw_map(uint8_t center_x, uint8_t center_y) {
                 if (dy < 0) dy = -dy;
                 int8_t dist = (dx > dy) ? dx : dy;
 
-                if (dist > 2) continue;
+                if (dist > (int8_t)fog_radius) continue;
 
                 int8_t iso_x = (lx - ly) * 2 + 12;
                 int8_t iso_y = (lx + ly) * 1 + 2;
@@ -228,7 +228,7 @@ void draw_map(uint8_t center_x, uint8_t center_y) {
                 uint16_t mask = state_tl + state_tr * 3 + state_bl * 9 + state_br * 27;
 
                 uint16_t v;
-                if (dist == 2) {
+                if (dist == (int8_t)fog_radius) {
                     v = is_alt ? (36 + 243 + mask) : (36 + 162 + mask);
                 } else {
                     v = is_alt ? (36 + 81 + mask) : (36 + mask);
@@ -248,13 +248,20 @@ void draw_map(uint8_t center_x, uint8_t center_y) {
     
     update_stamina_display();
     
-    // Trasferiamo l'intera mappa 32x32 (1024 byte) al Background hardware.
-    // Con labirinti grandi (map_size > 7) la finestra fog-of-war 5x5, proiettata in
-    // coordinate isometriche assolute, puo' cadere in righe OLTRE il vecchio range
-    // 2-17 (a causa del wrapping & 31), quindi non basta piu' flussare solo 16 righe.
-    // draw_map e' chiamato solo ai passi del movimento (non ogni frame), quindi il
-    // costo del flush completo e' sostenibile.
-    set_bkg_tiles(0, 0, 32, 32, map_buffer);
+    // Flush dinamico a 16 righe (512 byte) centrato sulla iso_y del centro di disegno,
+    // con gestione del wrap della mappa 32x32. 16 righe = prestazioni del progetto
+    // originale; centrando su center_iso_y la nebbia ricade sempre nelle righe flussate
+    // anche nei labirinti grandi, dove le iso_y assolute wrappano fuori dal vecchio
+    // range fisso 2-17.
+    int16_t center_iso_y = (int16_t)center_x + (int16_t)center_y + 2;
+    uint8_t start = (uint8_t)((center_iso_y - 8) & 31);
+    if (start + 16 <= 32) {
+        set_bkg_tiles(0, start, 32, 16, &map_buffer[(uint16_t)start * 32]);
+    } else {
+        uint8_t first = 32 - start;
+        set_bkg_tiles(0, start, 32, first, &map_buffer[(uint16_t)start * 32]);
+        set_bkg_tiles(0, 0, 32, 16 - first, map_buffer);
+    }
 }
 
 /**

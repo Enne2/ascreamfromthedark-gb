@@ -305,7 +305,7 @@ void play_music_tick(void) {
                         gameover_music_step++;
                     }
                 }
-            } else if (game_over == 2) { // Next Level (Going Deeper)
+            } else if (game_over == 2 || game_over == 3) { // Next Level (Going Deeper) o Finale
                 victory_music_timer++;
                 if (victory_music_timer >= 15) { // 15 frames per note = 4 notes/sec
                     victory_music_timer = 0;

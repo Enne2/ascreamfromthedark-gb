@@ -8,6 +8,8 @@ uint8_t map_size = MAP_SIZE;
 uint8_t maze[MAX_MAP_SIZE][MAX_MAP_SIZE];
 uint8_t map_buffer[32 * 32];
 
+uint8_t fog_radius = 2;
+
 uint8_t player_lx = 1;
 uint8_t player_ly = 1;
 uint8_t player_dir = 0;
@@ -28,15 +30,18 @@ int16_t target_px, target_py;
 
 uint8_t stamina = 100;
 uint8_t stamina_recharge_timer = 0;
+uint8_t stamina_recharge_rate = 60;
 
 uint8_t level = 1;
 
-uint8_t enemy_lx = 0;
-uint8_t enemy_ly = 0;
-uint8_t enemy_is_moving = 0;
-uint8_t enemy_move_progress = 0;
-int8_t enemy_start_lx, enemy_start_ly;
-int8_t enemy_target_lx, enemy_target_ly;
-int16_t enemy_start_px, enemy_start_py;
-int16_t enemy_target_px, enemy_target_py;
-uint8_t enemy_cooldown = 0;
+uint8_t num_enemies = 1;
+uint8_t enemy_step_cooldown = 60;
+uint8_t enemy_lx[MAX_ENEMIES] = {0};
+uint8_t enemy_ly[MAX_ENEMIES] = {0};
+uint8_t enemy_is_moving[MAX_ENEMIES] = {0};
+uint8_t enemy_move_progress[MAX_ENEMIES] = {0};
+int8_t enemy_start_lx[MAX_ENEMIES], enemy_start_ly[MAX_ENEMIES];
+int8_t enemy_target_lx[MAX_ENEMIES], enemy_target_ly[MAX_ENEMIES];
+int16_t enemy_start_px[MAX_ENEMIES], enemy_start_py[MAX_ENEMIES];
+int16_t enemy_target_px[MAX_ENEMIES], enemy_target_py[MAX_ENEMIES];
+uint8_t enemy_cooldown[MAX_ENEMIES] = {0};

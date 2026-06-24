@@ -39,10 +39,18 @@ Se la Stamina scende sotto 10, B+direzione **ripiega silenziosamente su camminat
 
 Il gioco parte dal **livello 1**. Raggiungere la botola (casella traguardo) significa "sprofondare più giù" (*Going Deeper*): alla pressione di START il livello viene **incrementato** e viene generato un nuovo labirinto. In caso di sconfitta (cattura da parte del fantasma) si **ricomincia dallo stesso livello raggiunto**: il contatore non si azzera, solo il passaggio per il titolo (nuova partita) riparte da 1.
 
-## Dimensione crescente del labirinto
+## Dimensione crescente del labirinto e difficoltà progressiva
 
-Ad ogni livello la **dimensione del labirinto cresce di 2 tile per lato**: si parte da 7x7 (livello 1) e si arriva a 9x9, 11x11, 13x13, 15x15, fino al cap di **17x17**. La dimensione corrente è la variabile globale `map_size` (l'array `maze` è allocato con bound `MAX_MAP_SIZE` = 17 in modo da contenere qualunque dimensione). Il DFS in `maze.c` genera un perfect maze su `map_size`x`map_size` (le celle dispari sono le stanze, per questo `map_size` è sempre dispari), poi lo rompe con i loop al 15% e posiziona la botola a distanza di Chebyshev ≥ `map_size/2` dalla partenza. Anche lo spawn del fantasma scala: parte a distanza ≥ `map_size/2`, così nelle mappe grandi non si attiva subito (il suo cono visivo resta comunque 5x5, fissato dal fog of war).
+Ad ogni livello la **dimensione del labirinto cresce di 2 tile per lato**: 7x7 (livello 1) fino a **21x21** (livello 8). La dimensione corrente è la variabile globale `map_size` (l'array `maze` è allocato con bound `MAX_MAP_SIZE` = 21). Il DFS genera un perfect maze su `map_size`x`map_size` (le celle dispari sono le stanze, per questo `map_size` è sempre dispari), poi lo rompe con i loop al 15% e posiziona la botola a distanza di Chebyshev ≥ `map_size/2` dalla partenza.
 
-Poiché con labirinti grandi la finestra fog-of-war 5x5, proiettata in coordinate isometriche assolute, può cadere fuori dal vecchio range di righe flussato (2-17) a causa del wrapping della mappa 32x32, `draw_map` ora flussa l'intera mappa 32x32 al hardware background. `draw_map` è chiamato solo ai passi del movimento (non ogni frame), quindi il costo è sostenibile.
+Oltre alla dimensione, ci sono altri **assi di difficoltà** che scalano col livello:
+- **Numero di fantasmi**: `num_enemies = level` (capped a `MAX_ENEMIES` = 8). Ogni fantasma ha stato indipendente (array) e AI greedy propria; cooldown iniziali sfasati per non sincronizzarli.
+- **Fantasma più veloce**: `enemy_step_cooldown = 60 - 7*(level-1)` (floor 10) — pausa più breve tra i passi ai livelli alti.
+- **Stamina più lenta**: `stamina_recharge_rate = 60 + 12*(level-1)` — la barra si ricarica più lentamente.
+- **Nebbia più stretta**: `fog_radius = 1` (3x3) dal livello 7 (invece di 2 / 5x5).
+
+**Il gioco finisce dopo il livello 8**: superare la botola al livello 8 setta `game_over = 3` (finale) invece di 2 (Going Deeper). La schermata finale usa il font IBM ricaricato per stampare "YOU ESCAPED / THE DARKNESS / LEVEL 8 CLEARED / PRESS START"; START torna al titolo (nuova partita dal livello 1).
+
+Poiché con labirinti grandi la finestra fog-of-war, proiettata in coordinate isometriche assolute, può cadere fuori dal vecchio range di righe flussato (2-17) a causa del wrapping della mappa 32x32, `draw_map` ora usa un flush **dinamico a 16 righe** centrato sulla iso_y del centro di disegno (con gestione del wrap via due `set_bkg_tiles`). Questo mantiene le prestazioni del progetto originale (16 righe = 512 byte) coprendo la nebbia in qualunque posizione.
 
 L'indicatore `L<n>` è mostrato in **alto a sinistra** tramite tre sprite hardware (OAM ID 23–25), disegnati dall'asset `level.png` (11 glifi 8x16: 'L', '0'–'9'). Le decine vengono mostrate solo dal livello 10 in poi (sotto, lo sprite decine è spostato fuori schermo). Come la barra stamina (in alto a destra), l'indicatore è a coordinate-schermo fisse e indipendente dallo scroll isometrico, e viene nascosto durante il game over e sul titolo. La base VRAM dei glifi è allineata a un indice **pari** perché in modalità sprite 8x16 l'hardware ignora il bit meno significativo dell'indice tile.

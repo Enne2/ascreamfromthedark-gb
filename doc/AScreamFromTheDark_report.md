@@ -57,7 +57,7 @@ Camera centrata: `scroll_x = px - 64`, `scroll_y = py - 72` (160×144 display �
 
 ### 3.2 Generazione del labirinto (`maze.c`)
 - **DFS iterativo con stack in WRAM** (`stack_x/y` statici, sized `(MAX_MAP_SIZE/2)^2`): evita l'overflow dello stack hardware del LR35902. Celle dispari = stanze, celle pari = muri divisori; scava il muro di mezzo con la media aritmetica delle coordinate.
-- **Dimensione crescente col livello**: `map_size = MAP_SIZE + 2*(level-1)`, capped a `MAX_MAP_SIZE`=17 (sempre dispari). L'array `maze` è allocato `[MAX_MAP_SIZE][MAX_MAP_SIZE]` (289 byte) e i moduli usano `map_size` come bound runtime.
+- **Dimensione crescente col livello**: `map_size = MAP_SIZE + 2*(level-1)`, capped a `MAX_MAP_SIZE`=21 (raggiunto al livello 8, sempre dispari). L'array `maze` è allocato `[MAX_MAP_SIZE][MAX_MAP_SIZE]` (441 byte) e i moduli usano `map_size` come bound runtime.
 - **Fase 2 — loop**: riapre muri residui che collegano due corridoi opposti con probabilità 15%. Vitale per il gameplay d'inseguimento.
 - **Fase 3 — botola**: sceglie una cella calpestabile a distanza di Chebyshev ≥ `map_size/2` dalla partenza `(1,1)` (soglia scalata: 3 per 7x7, 8 per 17x17), tra **tutte** le celle del labirinto. Fallback sulla cella più lontana in assoluto.
 
@@ -88,13 +88,15 @@ Distanza di **Chebyshev** `max(|dx|,|dy|)` invece di euclidea (no sqrt, no looku
 - Questo evita l'uso di sprite hardware per la botola (che causerebbero flickering per il limite di 10 sprite/scanline) e contiene il consumo di VRAM (limite 256 tile).
 
 ### 3.6 Ottimizzazione rendering
-`memset` azzera `map_buffer` (32x32) ad ogni `draw_map`, poi disegna solo la finestra fog 5x5 (~25 tile). Trasferisce l'intera mappa 32x32 al background hardware (`set_bkg_tiles(0,0,32,32,map_buffer)`): necessario perché con labirinti grandi (`map_size` > 7) la finestra fog, proiettata in coordinate iso assolute, può cadere fuori dal range di righe che la vecchia ottimizzazione (righe 2-17) flussava, a causa del wrapping `& 31`. `draw_map` è chiamato solo ai passi del movimento (frame 8 e completamento, non ogni frame), quindi il flush completo è sostenibile. Aggiornamento a `move_progress==8` (metà passo) per fluidità del fog of war. `map_buffer` usato con wrap `& 31` per gestire lo scroll modulare.
+`memset` azzera `map_buffer` (32x32) ad ogni `draw_map`, poi disegna solo la finestra fog (2r+1)^2. Flush **dinamico a 16 righe** (512 byte) centrato sulla iso_y del centro di disegno, con gestione del wrap della mappa 32x32 via due `set_bkg_tiles` quando la finestra attraversa il bordo. Necessario perché con labirinti grandi la nebbia, in coordinate iso assolute, wrappa fuori dal vecchio range fisso 2-17; 16 righe mantengono le prestazioni originali. Aggiornamento a `move_progress==8` (metà passo) per fluidità del fog of war.
 
-### 3.7 AI del fantasma (`enemy_logic.c`)
-- **Greedy invece di A***: confronta la distanza al quadrato `dx²+dy²` delle 4 celle adiacenti calpestabili e sceglie la minima. No sqrt (pesante su 4 MHz), no heap/nodi (frame drops inammissibili). Difetto voluto: si incastra in vicoli a U → diventa una dinamica di gameplay (seminarlo col level design).
-- **Cooldown**: dopo ogni passo (16 frame di LERP) rimane congelato 60 frame (1 s). Il giocatore è più veloce → il salto evasivo è il salvavita.
-- **Hitbox pixel-perfect**: la morte non scatta per coincidenza di cella logica, ma per sovrapposizione dei pixel fisici con tolleranza `|dx|<12 && |dy|<6`. Più "giusta" agli occhi del giocatore.
-- Culling off-screen: `enemy_screen_x` e `_y` con wrap `& 255` + soglie `-8..168` / `-8..152`; se fuori range o `ep_dist > 2` lo sprite viene spostato a `(0,0)` (offscreen).
+### 3.7 AI dei fantasmi (`enemy_logic.c`) — multi-entity
+- **Fino a 8 fantasmi** (`num_enemies = level`, capped `MAX_ENEMIES=8`): stato in array indicizzati (`enemy_lx[i]`, `enemy_is_moving[i]`, ...). Ogni fantasma usa 2 slot OAM a partire da `2 + i*2` (il player usa 0-1).
+- **Greedy invece di A***: per ciascun fantasma, tra le 4 celle adiacenti calpestabili sceglie quella che minimizza la distanza al quadrato verso il giocatore (no sqrt, no heap). Difetto voluto: si incastra nei vicoli a U.
+- **Cooldown scalabile**: dopo ogni passo (16 frame LERP) il fantasma aspetta `enemy_step_cooldown` frame (60 al L1, ~11 al L8). Cooldown iniziali sfasati (i*8) per non sincronizzarli.
+- **Attivazione**: insegue solo se entro il raggio di nebbia (Chebyshev ≤ `fog_radius`).
+- **Hitbox pixel-perfect**: la morte scatta se i pixel di un qualunque fantasma si sovrappongono a quelli del giocatore (|dx|<12, |dy|<6); al primo catch il loop si ferma (`return`).
+- **Culling**: `enemy_screen_x/y` con wrap `& 255` + soglie fisiche; fuori range o oltre la nebbia lo sprite va offscreen.
 
 ### 3.8 Audio (`sound.c`)
 Sequencer agganciato al **VBL interrupt** (`add_VBL(play_music_tick)`), ~60 Hz, non blocca il rendering. Usa i 4 canali APU:

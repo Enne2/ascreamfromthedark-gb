@@ -82,10 +82,15 @@ void engine_init(void) {
     // Usa il registro divisore hardware (DIV_REG) per seedare l'RNG. Garantisce labirinti diversi ogni volta.
     initrand(DIV_REG);
 
-    // Dimensione del labirinto crescente col livello: +2 tile per livello a partire da 7,
-    // capped a MAX_MAP_SIZE (17). Sempre dispari (per il pattern stanza/muro del DFS).
-    map_size = MAP_SIZE + 2 * (level - 1);
+    map_size = MAP_SIZE + 2 * (level - 1); // +2/level from 7, capped at MAX_MAP_SIZE (21) -> level 8
     if (map_size > MAX_MAP_SIZE) map_size = MAX_MAP_SIZE;
+
+    // --- Assi di difficolta' progressivi (scalano col livello) ---
+    fog_radius = (level >= 7) ? 1 : 2;                 // nebbia 5x5 -> 3x3 dal livello 7
+    stamina_recharge_rate = 60 + (level - 1) * 12;     // ricarica stamina piu' lenta
+    enemy_step_cooldown = 60 - (level - 1) * 7;        // fantasma piu' veloce (cooldown piu' corto)
+    if (enemy_step_cooldown < 10) enemy_step_cooldown = 10;
+    num_enemies = (level <= MAX_ENEMIES) ? level : MAX_ENEMIES; // +1 fantasma per livello
 
     // DELEGA LA GENERAZIONE: Chiede al modulo maze.c di creare l'array della mappa
     generate_maze();
@@ -124,32 +129,53 @@ void engine_init(void) {
         }
     }
 
-    // SPAWN DEL NEMICO
-    // Cerca randomicamente un punto lontano almeno map_size/2 celle dal giocatore
-    // (scala con la dimensione del labirinto: in una mappa grande il fantasma parte
-    // lontano e non si attiva finché non entra nel cono visivo 5x5 del fog of war).
     uint8_t enemy_min_dist = map_size / 2;
     if (enemy_min_dist < 3) enemy_min_dist = 3;
-    while (1) {
-        uint8_t rx = rand() % map_size;
-        uint8_t ry = rand() % map_size;
-        if (maze[ry][rx] == 1) {
-            int8_t dx = (int8_t)rx - (int8_t)player_lx;
-            int8_t dy = (int8_t)ry - (int8_t)player_ly;
+    // SPAWN DEI NEMICI (num_enemies fantasmi): cella calpestabile lontana >= map_size/2
+    // dal giocatore e >= 2 dagli altri fantasmi gia' piazzati; cooldown sfasati (i*8)
+    // cosi' non si muovono tutti in sincrono. Dopo 40 tentativi rilassa la distanza.
+    for (uint8_t i = 0; i < num_enemies; i++) {
+        uint8_t rx = 0, ry = 0, placed = 0;
+        for (uint8_t tries = 0; tries < 80 && !placed; tries++) {
+            uint8_t candx = rand() % map_size;
+            uint8_t candy = rand() % map_size;
+            if (maze[candy][candx] != 1) continue;
+            int8_t dx = (int8_t)candx - (int8_t)player_lx;
+            int8_t dy = (int8_t)candy - (int8_t)player_ly;
             if (dx < 0) dx = -dx;
             if (dy < 0) dy = -dy;
             int8_t dist = (dx > dy) ? dx : dy;
-            if (dist >= (int8_t)enemy_min_dist) {
-                enemy_lx = rx;
-                enemy_ly = ry;
-                break;
+            uint8_t req = (tries < 40) ? enemy_min_dist : 2;
+            if (dist < (int8_t)req) continue;
+            uint8_t too_close = 0;
+            for (uint8_t j = 0; j < i; j++) {
+                int8_t ex = (int8_t)candx - (int8_t)enemy_lx[j];
+                int8_t ey = (int8_t)candy - (int8_t)enemy_ly[j];
+                if (ex < 0) ex = -ex;
+                if (ey < 0) ey = -ey;
+                if (((ex > ey) ? ex : ey) < 2) { too_close = 1; break; }
             }
+            if (too_close) continue;
+            rx = candx; ry = candy; placed = 1;
         }
+        if (!placed) {
+            for (uint8_t y = 1; y < map_size - 1 && !placed; y++)
+                for (uint8_t x = 1; x < map_size - 1 && !placed; x++)
+                    if (maze[y][x] == 1 && !(x == player_lx && y == player_ly)) { rx = x; ry = y; placed = 1; }
+        }
+        enemy_lx[i] = rx;
+        enemy_ly[i] = ry;
+        enemy_is_moving[i] = 0;
+        enemy_move_progress[i] = 0;
+        enemy_cooldown[i] = (uint8_t)(enemy_step_cooldown + i * 8);
+    }
+    // Nasconde gli sprite dei nemici eccedenti (es. quando num_enemies cala tornando al titolo).
+    for (uint8_t i = num_enemies; i < MAX_ENEMIES; i++) {
+        enemy_is_moving[i] = 0;
+        move_metasprite(enemy_metasprites[0], player_TILE_COUNT, 2 + i * 2, 0, 0);
     }
 
     // Reset Variabili di Gameplay
-    enemy_is_moving = 0;
-    enemy_cooldown = 60;
     game_over = 0;
     stamina = 100;
     stamina_recharge_timer = 0;
@@ -162,6 +188,21 @@ void engine_init(void) {
     update_camera();
     update_player_sprite();
     update_level_display(); // Mostra l'indicatore livello (top-left)
+}
+
+/**
+ * Scrive una stringa nel map_buffer (copria RAM della BG map 32x32) usando gli indici
+ * tile del font IBM (tile = ASCII - 32, il font parte dallo spazio). Usato per la
+ * schermata finale senza dipendere da printf/console.
+ */
+static void ending_puttext(uint8_t col, uint8_t row, const char *s) {
+    uint8_t i = 0;
+    while (s[i]) {
+        if (col + i < 32) {
+            map_buffer[(uint16_t)row * 32 + col + i] = (uint8_t)(s[i] - ' ');
+        }
+        i++;
+    }
 }
 
 /**
@@ -187,11 +228,27 @@ void engine_update(uint8_t keys, uint8_t prev_keys) {
                 } else if (game_over == 2) {
                     // Mostra la schermata "Going Deeper"
                     HIDE_SPRITES;
-                    // Reset scroll so the full screen image is aligned
                     SCX_REG = 0;
                     SCY_REG = 0;
                     set_bkg_data(0, next_level_TILE_COUNT, next_level_tiles);
                     set_bkg_tiles(0, 0, 20, 18, next_level_map);
+                } else if (game_over == 3) {
+                    // FINALE: livello 8 superato, il gioco finisce. Schermata di chiusura
+                    // con testo ricavato dal font IBM (ricaricato perche' il gameplay lo
+                    // aveva sovrascritto coi tile del labirinto). Scriviamo direttamente
+                    // nel map_buffer (tile = ASCII - 32) senza dipendere da printf.
+                    HIDE_SPRITES;
+                    SCX_REG = 0;
+                    SCY_REG = 0;
+                    font_init();
+                    font_t end_font = font_load(font_ibm);
+                    font_set(end_font);
+                    memset(map_buffer, 0, sizeof(map_buffer)); // tile 0 = spazio (sfondo)
+                    ending_puttext(4, 6, "YOU ESCAPED");
+                    ending_puttext(3, 8, "THE DARKNESS");
+                    ending_puttext(2, 11, "LEVEL 8 CLEARED");
+                    ending_puttext(3, 14, "PRESS START");
+                    set_bkg_tiles(0, 0, 32, 32, map_buffer);
                 }
                 
                 // Imposta i timer audio per far iniziare la musica finale dal modulo sound.c
@@ -207,42 +264,34 @@ void engine_update(uint8_t keys, uint8_t prev_keys) {
                 }
             }
         } else {
-            // Dopo il timer, disegna i metasprite di GAME OVER fissi in mezzo allo schermo
+            // Dopo il timer: nasconde tutti i fantasmi (niente AI durante il game over)
+            for (uint8_t i = 0; i < MAX_ENEMIES; i++) {
+                move_metasprite(enemy_metasprites[0], player_TILE_COUNT, 2 + i * 2, 0, 0);
+            }
+            // Sconfitta: metasprite GAME OVER + giocatore al centro.
             if (game_over == 1) {
                 move_metasprite(gameover_metasprites[0], player_TILE_COUNT + enemy_TILE_COUNT, 8, 88, 120);
-            }
-            
-            // Il giocatore rimane visibile al centro, il nemico scompare se vinto o appare se sconfitto.
-            update_player_sprite();
-            
-            int16_t enemy_px = (enemy_lx - enemy_ly) * 16 + 96;
-            int16_t enemy_py = (enemy_lx + enemy_ly) * 8 + 16;
-            int16_t enemy_screen_x = ((enemy_px - scroll_x) & 255) + 24;
-            int16_t enemy_screen_y = ((enemy_py - scroll_y) & 255) + 16;
-            
-            int8_t edx = (int8_t)player_lx - (int8_t)enemy_lx;
-            int8_t edy = (int8_t)player_ly - (int8_t)enemy_ly;
-            if (edx < 0) edx = -edx;
-            if (edy < 0) edy = -edy;
-            uint8_t ep_dist = (edx > edy) ? edx : edy;
-            
-            if (game_over == 1 && ep_dist <= 2 && enemy_screen_x >= -8 && enemy_screen_x <= 168 && enemy_screen_y >= -8 && enemy_screen_y <= 152) {
-                move_metasprite(enemy_metasprites[0], player_TILE_COUNT, 4, enemy_screen_x, enemy_screen_y);
-            } else {
-                move_metasprite(enemy_metasprites[0], player_TILE_COUNT, 4, 0, 0); 
+                update_player_sprite();
             }
 
             // Attende la pressione di START per riavviare
             if ((keys & J_START) && !(prev_keys & J_START)) {
-                // Nasconde la grafica testuale e ricarica tutto l'engine.
-                // Vittoria (Going Deeper) -> livello successivo.
-                // Sconfitta -> si ricomincia dallo stesso livello raggiunto (non si azzera).
                 if (game_over == 2) {
+                    // Going Deeper -> livello successivo
                     level++;
+                    move_metasprite(gameover_metasprites[0], player_TILE_COUNT + enemy_TILE_COUNT, 8, 0, 0);
+                    SHOW_SPRITES;
+                    engine_init();
+                } else if (game_over == 3) {
+                    // Finale: torna al titolo (la prossima partita ripartira' dal livello 1)
+                    app_state = 0;
+                    title_init();
+                } else {
+                    // Sconfitta: ricomincia dallo stesso livello raggiunto (non si azzera)
+                    move_metasprite(gameover_metasprites[0], player_TILE_COUNT + enemy_TILE_COUNT, 8, 0, 0);
+                    SHOW_SPRITES;
+                    engine_init();
                 }
-                move_metasprite(gameover_metasprites[0], player_TILE_COUNT + enemy_TILE_COUNT, 8, 0, 0);
-                SHOW_SPRITES;
-                engine_init();
             }
         }
         return;
