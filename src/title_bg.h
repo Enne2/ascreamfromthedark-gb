@@ -11,7 +11,7 @@
 #define title_bg_TILE_H 8
 #define title_bg_WIDTH 160
 #define title_bg_HEIGHT 144
-#define title_bg_TILE_COUNT 219
+#define title_bg_TILE_COUNT 196
 #define title_bg_PALETTE_COUNT 1
 #define title_bg_COLORS_PER_PALETTE 4
 #define title_bg_TOTAL_COLORS 4
@@ -22,6 +22,6 @@ extern const unsigned char title_bg_map[360];
 BANKREF_EXTERN(title_bg)
 
 extern const palette_color_t title_bg_palettes[4];
-extern const uint8_t title_bg_tiles[3504];
+extern const uint8_t title_bg_tiles[3136];
 
 #endif
