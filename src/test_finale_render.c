@@ -28,9 +28,10 @@ static void drive_finale(void) {
     finale_timer++;
     if (finale_timer >= FINALE_PERIOD) {
         finale_timer = 0;
-        if (finale_step < 192) {
-            play_finale_step(finale_step);
-            finale_step++;
+        play_finale_step(finale_step);
+        finale_step++;
+        if (finale_step >= 192) {
+            finale_step = 0; // loop
         }
     }
 }

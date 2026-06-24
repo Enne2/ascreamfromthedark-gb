@@ -398,13 +398,14 @@ void play_music_tick(void) {
                         gameover_music_step++;
                     }
                 }
-            } else if (game_over == 3) { // Finale tragico (brano dedicato, piu' lento)
+            } else if (game_over == 3) { // Finale tragico (brano dedicato, piu' lento, in loop)
                 finale_music_timer++;
                 if (finale_music_timer >= 14) { // 14 frames per note (~4 notes/sec, somber)
                     finale_music_timer = 0;
-                    if (finale_music_step < 192) {
-                        play_finale_step(finale_music_step);
-                        finale_music_step++;
+                    play_finale_step(finale_music_step);
+                    finale_music_step++;
+                    if (finale_music_step >= 192) {
+                        finale_music_step = 0; // loop: il brano ricomincia
                     }
                 }
             } else if (game_over == 2) { // Next Level (Going Deeper)
