@@ -25,6 +25,9 @@ static volatile uint8_t victory_music_step = 0;
 static volatile uint8_t title_music_timer = 0;
 static volatile uint8_t title_music_step = 0;
 
+static volatile uint8_t finale_music_timer = 0;
+static volatile uint8_t finale_music_step = 0;
+
 // Note frequencies calculation: (2048 - (131072 / frequency))
 #define R 0
 #define N_C2 44
@@ -188,6 +191,60 @@ const uint16_t title_melody[32] = {
     N_E2, N_B2, N_E3, N_B2, N_GS3, N_E3, N_B2, N_E2  // E
 };
 
+const uint16_t finale_ch1_seq[192] = {
+    N_A4, R, N_F4, R, N_D4, R, N_A3, R,
+    N_A4, N_F4, N_D4, N_A3, N_F4, N_D4, N_A3, R,
+    N_G4, R, N_E4, R, N_C4, R, N_G3, R,
+    N_F4, R, N_D4, R, N_AS3, R, N_F3, R,
+    N_E4, R, N_CS4, R, N_A3, R, N_E3, R,
+    N_A4, N_F4, N_D4, N_A3, N_A4, N_F4, N_D4, R,
+    N_A4, N_A4, N_G4, N_F4, N_E4, N_F4, N_D4, R,
+    N_G4, N_F4, N_E4, N_D4, N_C4, N_D4, N_E4, R,
+    N_F4, N_F4, N_E4, N_D4, N_C4, N_AS3, N_A3, R,
+    N_E4, N_E4, N_D4, N_CS4, N_B3, N_CS4, N_E4, R,
+    N_A5, R, N_A5, N_G5, N_F5, N_E5, N_D5, R,
+    N_A5, N_F5, N_D5, N_A4, N_F5, N_D5, N_A4, R,
+    N_G5, R, N_G5, N_F5, N_E5, N_D5, N_C5, R,
+    N_F5, R, N_F5, N_E5, N_D5, N_C5, N_AS4, R,
+    N_E5, N_E5, N_F5, N_E5, N_CS5, N_A4, N_CS5, R,
+    N_D5, N_C5, N_B4, N_A4, N_G4, N_F4, N_E4, R,
+    N_A4, N_G4, N_F4, N_E4, N_D4, N_C4, N_AS3, N_A3,
+    N_D4, R, N_C4, R, N_AS3, R, N_A3, R,
+    N_D4, R, N_C4, R, N_AS3, R, N_A3, R,
+    N_E3, R, R, R, N_A3, R, R, R,
+    N_D3, R, R, R, R, R, R, R,
+    N_D3, R, R, R, N_C2, R, R, R,
+    N_C2, R, R, R, R, R, R, R,
+    R, R, R, R, R, R, R, R
+};
+
+const uint16_t finale_ch2_seq[192] = {
+    N_D3, R, R, R, R, R, R, R,
+    N_A2, R, R, R, R, R, R, R,
+    N_C3, R, R, R, R, R, R, R,
+    N_AS2, R, R, R, R, R, R, R,
+    N_A2, R, R, R, N_E3, R, R, R,
+    N_D3, R, R, R, R, R, R, R,
+    N_D3, R, N_A2, R, N_D3, R, N_A2, R,
+    N_C3, R, N_G2, R, N_C3, R, N_G2, R,
+    N_AS2, R, N_F2, R, N_AS2, R, N_F2, R,
+    N_A2, R, N_E3, R, N_A2, R, N_E3, R,
+    N_D3, R, R, R, N_A2, R, R, R,
+    N_D3, R, N_A2, R, N_D3, R, N_A2, R,
+    N_C3, R, N_G2, R, N_C3, R, N_G2, R,
+    N_AS2, R, N_F2, R, N_AS2, R, N_F2, R,
+    N_A2, R, N_E3, R, N_A2, R, N_E3, R,
+    N_D3, N_C3, N_AS2, N_A2, N_G2, N_F2, N_E2, R,
+    N_A2, N_G2, N_F2, N_E2, N_D3, N_C3, N_AS2, N_A2,
+    N_D3, R, N_C3, R, N_AS2, R, N_A2, R,
+    N_D3, R, N_C3, R, N_AS2, R, N_A2, R,
+    N_A2, R, R, R, N_E3, R, R, R,
+    N_D3, R, R, R, R, R, R, R,
+    N_D3, R, R, R, N_C2, R, R, R,
+    N_C2, R, R, R, R, R, R, R,
+    R, R, R, R, R, R, R, R
+};
+
 void sound_reset_music_state(void) {
     music_timer = 0;
     music_step = 0;
@@ -197,6 +254,8 @@ void sound_reset_music_state(void) {
     victory_music_step = 0;
     title_music_timer = 0;
     title_music_step = 0;
+    finale_music_timer = 0;
+    finale_music_step = 0;
 }
 
 static void play_note(uint16_t reg_val) {
@@ -236,6 +295,40 @@ void play_gameover_step(uint8_t step) {
                 NR43_REG = 0x42; // Crash freq
             }
             NR44_REG = 0x80; // trigger noise
+        }
+    }
+}
+
+void play_finale_step(uint8_t step) {
+    if (step < 192) {
+        uint16_t n1 = finale_ch1_seq[step];
+        if (n1 != R) {
+            NR10_REG = 0x00;
+            NR11_REG = 0x80;
+            NR12_REG = 0xA2; // soft, long fade: somber melody
+            NR13_REG = n1 & 0xFF;
+            NR14_REG = (n1 >> 8) | 0x80;
+        }
+        uint16_t n2 = finale_ch2_seq[step];
+        if (n2 != R) {
+            NR21_REG = 0x80;
+            NR22_REG = 0xD1; // deep bass, slow fade
+            NR23_REG = n2 & 0xFF;
+            NR24_REG = (n2 >> 8) | 0x80;
+        }
+        // CH4 noise toll at the start of each chord (every 8 steps):
+        // mid toll by default, crash at the scream climax, deep toll in the abyss.
+        if (step % 8 == 0) {
+            NR41_REG = 0x01;
+            NR42_REG = 0xB2;
+            if (step >= 160) {
+                NR43_REG = 0x70; // deep toll (abyss)
+            } else if (step == 80 || step == 88 || step == 112) {
+                NR43_REG = 0x42; // crash (climax)
+            } else {
+                NR43_REG = 0x68; // mid toll
+            }
+            NR44_REG = 0x80;
         }
     }
 }
@@ -296,13 +389,22 @@ void play_music_tick(void) {
 
     if (game_over) { // ENDGAME
         if (game_over_timer == 0) { // Se il ritardo di fine partita è terminato
-            if (game_over == 1 || game_over == 3) { // Defeat (Ghost) o Finale tragico
+            if (game_over == 1) { // Defeat (Ghost)
                 gameover_music_timer++;
                 if (gameover_music_timer >= 10) { // 10 frames per note (~6 notes/sec)
                     gameover_music_timer = 0;
                     if (gameover_music_step < 128) {
                         play_gameover_step(gameover_music_step);
                         gameover_music_step++;
+                    }
+                }
+            } else if (game_over == 3) { // Finale tragico (brano dedicato, piu' lento)
+                finale_music_timer++;
+                if (finale_music_timer >= 14) { // 14 frames per note (~4 notes/sec, somber)
+                    finale_music_timer = 0;
+                    if (finale_music_step < 192) {
+                        play_finale_step(finale_music_step);
+                        finale_music_step++;
                     }
                 }
             } else if (game_over == 2) { // Next Level (Going Deeper)

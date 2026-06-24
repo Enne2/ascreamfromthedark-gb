@@ -18,6 +18,7 @@ void play_music_tick(void);
 
 // Call to manually play a note from the game over / victory sequences 
 void play_gameover_step(uint8_t step);
+void play_finale_step(uint8_t step);
 void play_victory_step(uint8_t step);
 
 #endif
