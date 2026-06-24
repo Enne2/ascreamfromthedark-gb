@@ -17,9 +17,9 @@
 #include "player.h"
 #include "enemy.h"
 #include "gameover.h"
-#include "next_level.h"
 #include "stamina.h"
 #include "level.h"
+#include "claimed.h"
 #include "title_bg.h"
 
 /**
@@ -205,6 +205,12 @@ static void ending_puttext(uint8_t col, uint8_t row, const char *s) {
     }
 }
 
+static void ending_putdigit(uint8_t col, uint8_t row, uint8_t digit) {
+    if (col < 32) {
+        map_buffer[(uint16_t)row * 32 + col] = (uint8_t)(digit + ('0' - ' '));
+    }
+}
+
 /**
  * Loop Principale di Aggiornamento del Gioco (chiamato ad ogni Frame ~60 FPS).
  * Questo metodo funge da "Direttore d'Orchestra", delegando i compiti ai moduli specializzati.
@@ -222,16 +228,28 @@ void engine_update(uint8_t keys, uint8_t prev_keys) {
             // Quando scade il timer drammatico...
             if (game_over_timer == 0) {
                 if (game_over == 1) {
-                    // ...Svuota lo schermo
-                    memset(map_buffer, 0, sizeof(map_buffer));
-                    set_bkg_tiles(0, 0, 32, 32, map_buffer);
-                } else if (game_over == 2) {
-                    // Mostra la schermata "Going Deeper"
+                    // Sconfitta: schermata "claimed" a tutto schermo + metasprite GAME OVER
                     HIDE_SPRITES;
                     SCX_REG = 0;
                     SCY_REG = 0;
-                    set_bkg_data(0, next_level_TILE_COUNT, next_level_tiles);
-                    set_bkg_tiles(0, 0, 20, 18, next_level_map);
+                    BGP_REG = 0xE4; // palette standard (claimed ha la sua)
+                    set_bkg_data(0, claimed_TILE_COUNT, claimed_tiles);
+                    set_bkg_tiles(0, 0, 20, 18, claimed_map);
+                } else if (game_over == 2) {
+                    // Going Deeper: schermata di transizione testuale (font IBM).
+                    // (Era un'immagine, sostituita con testo per ridurre l'occupazione ROM
+                    // e fare spazio alla schermata "claimed" della morte.)
+                    HIDE_SPRITES;
+                    SCX_REG = 0;
+                    SCY_REG = 0;
+                    font_init();
+                    font_t gd_font = font_load(font_ibm);
+                    font_set(gd_font);
+                    memset(map_buffer, 0, sizeof(map_buffer));
+                    ending_puttext(2, 7,  "GOING DEEPER");
+                    ending_puttext(3, 9,  "LEVEL");
+                    ending_putdigit(9, 9, (uint8_t)(level + 1));
+                    set_bkg_tiles(0, 0, 32, 32, map_buffer);
                 } else if (game_over == 3) {
                     // FINALE TRAGICO: livello 8 superato, ma non e' una fuga. La traccia
                     // si e' esaurita, sei intrappolato. Sfondo nero (BGP invertito) + testo
