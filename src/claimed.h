@@ -11,7 +11,7 @@
 #define claimed_TILE_H 8
 #define claimed_WIDTH 160
 #define claimed_HEIGHT 144
-#define claimed_TILE_COUNT 118
+#define claimed_TILE_COUNT 197
 #define claimed_PALETTE_COUNT 1
 #define claimed_COLORS_PER_PALETTE 4
 #define claimed_TOTAL_COLORS 4
@@ -22,6 +22,6 @@ extern const unsigned char claimed_map[360];
 BANKREF_EXTERN(claimed)
 
 extern const palette_color_t claimed_palettes[4];
-extern const uint8_t claimed_tiles[1888];
+extern const uint8_t claimed_tiles[3152];
 
 #endif
