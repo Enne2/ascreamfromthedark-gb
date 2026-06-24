@@ -7,6 +7,7 @@
 *.ihx
 *.noi
 *.asm
+*.state
 
 # Compiled ROMs
 *.gb
