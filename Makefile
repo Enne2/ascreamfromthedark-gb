@@ -11,7 +11,7 @@ BUILD_DIR = build
 # C source files
 SRCS = $(SRC_DIR)/main.c $(SRC_DIR)/engine.c $(SRC_DIR)/globals.c $(SRC_DIR)/maze.c $(SRC_DIR)/sound.c $(SRC_DIR)/render.c $(SRC_DIR)/player_logic.c $(SRC_DIR)/enemy_logic.c $(SRC_DIR)/tiles.c $(SRC_DIR)/player.c $(SRC_DIR)/enemy.c $(SRC_DIR)/gameover.c $(SRC_DIR)/next_level.c $(SRC_DIR)/stamina.c $(SRC_DIR)/level.c $(SRC_DIR)/title_bg.c
 
-all: $(BUILD_DIR)/hello_iso.gb $(BUILD_DIR)/test_gameover.gb
+all: $(BUILD_DIR)/hello_iso.gb $(BUILD_DIR)/test_gameover.gb $(BUILD_DIR)/test_finale.gb
 
 # Generate image assets
 generate_images: $(SCRIPTS_DIR)/generate_assets.py $(SCRIPTS_DIR)/generate_enemy.py $(SCRIPTS_DIR)/generate_level.py
@@ -39,6 +39,10 @@ $(BUILD_DIR)/hello_iso.gb: generate_c_assets $(SRCS)
 $(BUILD_DIR)/test_gameover.gb: generate_c_assets $(SRC_DIR)/test_gameover_render.c
 	mkdir -p $(BUILD_DIR)
 	$(LCC) -Wa-l -Wl-m -Wl-j -o $(BUILD_DIR)/test_gameover.gb $(SRC_DIR)/test_gameover_render.c $(SRC_DIR)/player.c $(SRC_DIR)/enemy.c $(SRC_DIR)/gameover.c $(SRC_DIR)/stamina.c
+
+$(BUILD_DIR)/test_finale.gb: $(SRC_DIR)/test_finale_render.c
+	mkdir -p $(BUILD_DIR)
+	$(LCC) -Wa-l -Wl-m -Wl-j -o $(BUILD_DIR)/test_finale.gb $(SRC_DIR)/test_finale_render.c $(SRC_DIR)/globals.c $(SRC_DIR)/sound.c
 
 clean:
 	rm -rf $(BUILD_DIR)/*
