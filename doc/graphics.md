@@ -2,40 +2,77 @@
 
 ## Proiezione Isometrica
 
-Il Game Boy possiede un hardware progettato per griglie 2D piatte (scrolling orizzontale/verticale). Per ottenere un effetto isometrico 3D, trasformiamo matematicamente le coordinate logiche della griglia `(X, Y)` in pixel schermo `(iso_x, iso_y)`.
+Il Game Boy ha hardware per griglie 2D piatte. Per ottenere l'isometrica 2.5D, trasformiamo le coordinate logiche `(lx, ly)` in coordinate schermo:
 
-La formula utilizzata in `render.c` è:
 ```c
-int8_t iso_x = (lx - ly) * 2 + 12; 
-int8_t iso_y = (lx + ly) * 1 + 2; 
-```
-Questa trasformazione ruota la mappa di 45 gradi e la appiattisce sull'asse Y (rapporto 2:1, tipico dell'isometrico pixel-art).
+// Coordinate tile (background map)
+iso_x = (lx - ly) * 2 + 12;   // tile 32x16 -> metà larghezza
+iso_y = (lx + ly) * 1 + 2;    // tile altezza 8px
 
-## Ottimizzazione della Mappa
-
-Aggiornare l'intera background map hardware del Game Boy (32x32 tiles, 1024 bytes) ad ogni "passo" del giocatore causerebbe gravissimi cali di framerate (lag) e sfarfallii visivi.
-La soluzione implementata prevede di aggiornare *solo* le 16 righe visibili sullo schermo (160x144 pixel = 20x18 tiles) durante la funzione `draw_map`:
-```c
-set_bkg_tiles(0, 2, 32, 16, &map_buffer[2 * 32]);
+// Coordinate pixel (per camera/collisione)
+px = (lx - ly) * 16 + 96;
+py = (lx + ly) * 8  + 16;
 ```
 
-## Fog of War e Distanza di Chebyshev
+Camera centrata: `scroll_x = px - 64`, `scroll_y = py - 72`. Il player sprite è fisso al centro schermo (OAM 88,88); è il mondo a scorrere.
 
-Per aumentare la tensione e oscurare il labirinto, il gioco disegna solo i pavimenti vicini al giocatore. Invece di calcolare un cerchio reale (distanza euclidea) che richiederebbe una CPU avida di risorse matematiche (radici quadrate o lookup tables), usiamo la **Distanza di Chebyshev**:
+## Fog of War Scalabile
+
+La visibilità usa la **distanza di Chebyshev** `max(|dx|, |dy|)` (no sqrt, no lookup table). Il raggio è la variabile globale `fog_radius`:
+
 ```c
-int8_t dist = max(abs(dx), abs(dy));
-if (dist > 2) continue; // Nascondi
+if (dist > fog_radius) continue;          // nascondi
+if (dist == fog_radius) -> tile scuro     // anello di penombra
+if (dist <  fog_radius) -> tile normale   // zona illuminata
 ```
-Questo crea un quadrato di visibilità (5x5 celle) centrato sul giocatore, perfetto per le dinamiche a griglia.
 
-## Auto-Tiling e Illuminazione
+- **Livelli 1-6**: `fog_radius = 2` → finestra 5×5.
+- **Livelli 7-8**: `fog_radius = 1` → finestra 3×3 (nebbia più stretta, più difficoltà).
 
-Il modulo di rendering controlla i vicini logici (Nord, Sud, Est, Ovest) di ogni casella per applicare la grafica giusta (es. muri arrotondati e non tagliati). Questo avviene tramite una maschera di bit (`mask`).
-Inoltre, le celle a distanza Chebyshev pari a 2 (i bordi della visibilità) subiscono un cambio di offset grafico (`v = 32 + mask` o `v = 48 + mask`), prelevando dal tileset varianti più scure ("Tile Dark"). Questo simula l'affievolirsi della luce prima dell'oscurità totale.
+Il nemico si attiva e viene renderizzato solo se entro `fog_radius`, coerente con la nebbia.
 
-## Gestione Overlapping Isometrico (Multi-Pass Rendering)
+## Auto-Tiling e Multi-Pass Rendering
 
-Nei giochi isometrici basati su tile, la proiezione genera sovrapposizioni (overlapping) tra i macro-blocchi. Dato che il background del Game Boy non supporta vere trasparenze hardware (un tile sovrascrive interamente quello sottostante), i tile disegnati per ultimi "tagliano" quelli precedenti con i loro angoli piatti.
-Per preservare la complessa grafica 3D del traguardo (le scale) ed evitare l'esaurimento della ristrettissima VRAM (limite di 256 tile) tipico degli scenari pre-renderizzati combinatori, l'engine utilizza una strategia ibrida:
-1. **Bitmasking:** I pavimenti piatti ricolorano dinamicamente i propri angoli trasparenti in base al colore dei vicini, creando l'illusione di un ritaglio perfetto.
-2. **Painter's Algorithm (Pass Multiplo):** I pavimenti vengono renderizzati nel Pass 1, mentre gli oggetti complessi (come la casella di Vittoria) vengono disegnati rigorosamente in un Pass 2 successivo. Disegnandola per ultima, la scala sovrascrive i pavimenti frontali ma, grazie al Bitmasking dei propri angoli inferiori, si fonde con essi in modo invisibile. Ciò preserva interamente il disegno 3D senza richiedere sprite hardware addizionali (i quali causerebbero "flickering" per il rigido limite hardware di 10 sprite per scanline orizzontale).
+### Bitmasking
+Ogni pavimento calcola una maschera sui vicini (TL, TR, BL, BR) per selezionare la variante grafica corretta (bordi arrotondati, angoli). 16 varianti × 2 stili alternati a scacchiera (`is_alt = (lx+ly)%2`). Le celle a `dist == fog_radius` usano varianti più scure ("Tile Dark") per simulare l'affievolimento della luce.
+
+### Painter's Algorithm (2 passate)
+Il background del Game Boy non ha trasparenze hardware. Per gestire l'overlapping isometrico:
+1. **Pass 1**: pavimenti normali (bitmasking dinamico degli angoli).
+2. **Pass 2**: la botola (oggetto complesso con maschera a 4 vicini, 243+81+162 varianti) disegnata per ultima, sovrascrive i pavimenti frontali ma si fonde grazie alle maschere dei propri angoli inferiori.
+
+Questo preserva la grafica 3D della botola senza usare sprite hardware (evitando flickering per il limite di 10 sprite/scanline).
+
+## Flush Dinamico a 16 Righe
+
+`draw_map` azzera `map_buffer` (32×32), disegna solo la finestra fog, poi trasferisce al background hardware. Il flush è **dinamico a 16 righe** centrato sulla `iso_y` del centro di disegno, con gestione del wrap della mappa 32×32:
+
+```c
+int16_t center_iso_y = center_x + center_y + 2;
+uint8_t start = (center_iso_y - 8) & 31;
+if (start + 16 <= 32) {
+    set_bkg_tiles(0, start, 32, 16, &map_buffer[start * 32]);
+} else {
+    // wrap: due chiamate
+    set_bkg_tiles(0, start, 32, 32 - start, &map_buffer[start * 32]);
+    set_bkg_tiles(0, 0, 32, 16 - (32 - start), map_buffer);
+}
+```
+
+16 righe (512 byte) mantengono le prestazioni originali. Il flush è centrato dinamicamente perché con labirinti grandi (fino a 21×21) la finestra fog, in coordinate iso assolute, wrappa fuori dal vecchio range fisso 2-17.
+
+`draw_map` è chiamato solo ai passi del movimento (progress 8 e completamento), non ogni frame.
+
+## HUD via Sprite
+
+### Barra Stamina (alto destra)
+5 sprite (OAM 18-22), coordinate schermo fisse (indipendenti dallo scroll). Conversione `stamina*40/100` → pixel. Tile caricati a `tiles_TILE_COUNT` (indici ≥128) per evitare overlap VRAM con i tile del background (workaround commit `93deb35`).
+
+### Indicatore Livello (alto sinistra)
+3 sprite (OAM 23-25) che mostrano `L<n>` usando l'asset `level.png` (11 glifi 8×16: L, 0-9). Base VRAM allineata a indice **pari** (in modalità 8x16 l'hardware ignora il LSB del tile index). Generato con `png2asset -keep_duplicate_tiles` per ordine tile prevedibile. Nascosto durante game over.
+
+### Player Sprite
+Metasprite 16×16 (OAM 0-1), 8 frame (4 direzioni × 2 frame camminata). Arco parabolico per il salto: `y_offset = (move_progress * (16 - move_progress)) >> 2`. Animazione camminata: `frame_offset = (move_progress >> 2) & 1` (più veloce in corsa, dato che move_progress incrementa di 2).
+
+### Enemy Sprites
+Fino a 8 metasprite 16×16 (OAM 2+i*2), palette invertita (OBP1 = 0x1B, fantasma bianco). Renderizzati solo se entro `fog_radius` e on-screen; altrimenti spostati offscreen (0,0).

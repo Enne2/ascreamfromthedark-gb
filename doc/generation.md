@@ -1,26 +1,52 @@
 # Generazione Procedurale del Livello
 
-## Algoritmo Depth-First Search (DFS)
+## Algoritmo DFS con Backtracking
 
-Per garantire che ogni sessione di gioco sia unica, il labirinto viene generato proceduralmente ad ogni avvio (usando `DIV_REG` hardware del Game Boy come seed pseudo-casuale). La **dimensione del labirinto cresce col livello**: la variabile globale `map_size` parte da `MAP_SIZE` (7) al livello 1 e aumenta di 2 per livello fino al cap `MAX_MAP_SIZE` (17) — quindi 7x7, 9x9, 11x11, 13x13, 15x15, 17x17. `map_size` è sempre dispari perchè il DFS usa le celle dispari come stanze e le pari come muri divisori.
+Il labirinto è generato proceduralmente ad ogni avvio (seed da `DIV_REG`). L'algoritmo è un **Depth-First Search (DFS) iterativo** con backtracking che crea un "perfect maze" (ogni cella raggiungibile, nessun ciclo):
 
-L'algoritmo utilizzato in `maze.c` è un **Depth-First Search (DFS)** con Backtracking, modellato per creare un "Perfect Maze" (labirinto perfetto in cui ogni cella è raggiungibile tramite un unico percorso possibile e senza cicli).
-La mappa è concettualmente divisa in:
-- Celle dispari (es. `1,1`, `1,3`): "Stanze"
-- Celle pari: "Muri Divisori"
+1. La griglia `map_size × map_size` è divisa in **celle dispari = stanze** (1,1 / 1,3 / 3,1 ...) e **celle pari = muri divisori**.
+2. Il DFS parte da `(1,1)`, sceglie un vicino dispari non visitato a distanza 2, abbatte il muro divisorio (media aritmetica delle coordinate), avanza.
+3. Se nessun vicino disponibile, torna indietro (backtracking) usando uno stack.
+4. Quando lo stack è vuoto, il labirinto è completo.
 
-L'algoritmo parte da `1,1`, sceglie un vicino dispari casuale non visitato, abbatte il muro divisorio pari nel mezzo e avanza, salvando le posizioni in uno stack per poter tornare indietro (backtracking) quando finisce in un vicolo cieco.
+### Stack in WRAM (non sullo stack hardware)
+Gli array di backtracking (`stack_x`, `stack_y`, `valid_x`, `valid_y`) sono **statici in WRAM** (non sullo stack hardware del LR35902), sized per `MAX_MAP_SIZE = 21`:
+- `MAX_ROOMS = (21/2)² = 100` (massimo numero di stanze per 21×21)
+- `MAX_CELLS = 21² = 441` (massimo numero di celle candidate)
 
-## Rottura del Perfect Maze (Loop Generation)
+Questo evita l'overflow dello stack hardware del Game Boy (che è piccolo).
 
-Un "Perfect Maze" è frustrante in un gioco di inseguimento, perché intrappola il giocatore nei vicoli ciechi senza via di scampo.
-Pertanto, è stata aggiunta una *Fase 2* alla generazione: l'algoritmo scansiona i muri rimanenti e, se un muro divide due stanze adiacenti, lo abbatte con una probabilità del 15%.
-Questo genera anelli (loop) all'interno del labirinto, permettendo al giocatore tattiche evasive per aggirare il fantasma.
+## Dimensioni Crescenti col Livello
 
-## Posizionamento del Traguardo (La Botola)
+La dimensione del labirinto cresce di 2 tile per lato ad ogni livello:
 
-La casella traguardo è una **botola** nel terreno (ID 2) che il giocatore deve raggiungere per "sprofondare più giù" (*Going Deeper*) e avanzare di livello.
-La botola viene piazzata su una qualunque cella calpestabile a **sufficiente distanza** dalla casella di partenza del giocatore `(1,1)`. Si raccolgono tutte le celle `maze[y][x] == 1` la cui distanza di Chebyshev da `(1,1)` sia `>= MIN_GOAL_DIST` (3) e se ne sceglie una a caso. In questo modo il traguardo è sempre lontano dall'inizio ma può trovarsi su una qualunque tile del labirinto, non più vincolato al bordo sud.
-Se, per un caso limite, nessuna cella fosse a sufficienza distante (teoricamente impossibile in un perfect maze 7x7 con partenza 1,1), esiste un **fallback estremo** che posiziona la botola nella cella calpestabile più lontana in assoluto da `(1,1)`.
+| Livello | map_size | Stanze | Tile data |
+|---------|----------|--------|-----------|
+| 1 | 7×7 | 9 | 49 B |
+| 2 | 9×9 | 16 | 81 B |
+| 3 | 11×11 | 25 | 121 B |
+| 4 | 13×13 | 36 | 169 B |
+| 5 | 15×15 | 49 | 225 B |
+| 6 | 17×17 | 64 | 289 B |
+| 7 | 19×19 | 81 | 361 B |
+| 8 | 21×21 | 100 | 441 B |
 
-La distanza di Chebyshev è coerente col resto dell'engine (fog of war, attivazione del nemico). La botola è disegnata con un oggetto complesso a maschera 4-vicini nel Pass 2 del renderer (vedi `graphics.md`).
+`map_size = MAP_SIZE + 2*(level-1)`, capped a `MAX_MAP_SIZE = 21`. Sempre dispari (per il pattern stanza/muro). L'array `maze` è allocato `[21][21]` (441 byte) e i moduli usano `map_size` come bound runtime.
+
+## Rottura del Perfect Maze (Loop)
+
+Un perfect maze frustra un gioco d'inseguimento (vicoli ciechi senza scampo). La **Fase 2** riapre casualmente il 15% dei muri che collegano due corridoi opposti, generando anelli (loop) che permettono al giocatore di aggirare il fantasma.
+
+## Posizionamento della Botola
+
+La botola (tile ID 2) è il traguardo. Viene piazzata su una cella calpestabile a **sufficiente distanza** dalla partenza `(1,1)`:
+
+- Soglia: `min_goal = map_size / 2` (3 per 7×7, 10 per 21×21) — scala con la dimensione.
+- Si raccolgono tutte le celle con `maze[y][x] == 1` e `chebyshev((1,1), (x,y)) >= min_goal`, se ne sceglie una a caso.
+- Fallback: la cella calpestabile più lontana in assoluto da `(1,1)`.
+
+La botola è disegnata con un oggetto complesso a maschera 4-vicini nel Pass 2 del renderer (vedi `graphics.md`).
+
+## Spawn del Nemico
+
+I fantasmi (`num_enemies = level`, capped 8) sono piazzati su celle calpestabili lontane ≥ `map_size/2` dal giocatore e ≥ 2 celle dagli altri fantasmi già piazzati. I cooldown iniziali sono sfasati (`enemy_step_cooldown + i*8`) per non sincronizzarli.

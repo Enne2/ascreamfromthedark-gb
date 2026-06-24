@@ -1,89 +1,77 @@
 # A Scream from the Dark
 
-Un survival-horror procedurale in prospettiva isometrica per Game Boy (DMG/CGB), scritto in C con **GBDK-2020**. Sei imprigionato in un labirinto 7×7 generato casualmente, illuminato solo da un ristretto quadrato di visibilità. Un **fantasma** si nasconde nel buio e ti bracca non appena entri nel suo raggio visivo. L'unica via di fuga è la **botola** sul bordo sud della mappa: raggiungerla significa "sprofondare più giù" (*Going Deeper*) e generare un nuovo livello.
+Un survival-horror procedurale in prospettiva isometrica per Game Boy (DMG/CGB), scritto in C con **GBDK-2020**. Sei imprigionato in un labirinto generato casualmente, illuminato solo da un ristretto quadrato di visibilità. Dei **fantasmi** si nascondono nel buio e ti braccano. L'unica via di fuga è una **botola** posta lontano dalla partenza: raggiungerla significa "sprofondare più giù" (*Going Deeper*) e affrontare un livello più grande, con più nemici e meno visibilità. Dopo **8 livelli** il gioco finisce con un **finale tragico**.
 
 ---
 
-## 🎮 Caratteristiche
+## Caratteristiche
 
-- **Proiezione isometrica 2.5D**: rendering della mappa a diamante (tile 32×16 px) su schermo Game Boy, con autotiling dinamico.
-- **Labirinto casuale**: algoritmo DFS iterativo con stack in WRAM (per evitare overflow dello stack hardware) che genera un "perfect maze" 7×7 unico ad ogni partita, poi "rotto" con riaperture casuali al 15% per creare loop e percorsi alternativi.
-- **Fog of War**: visibilità 5×5 basata sulla distanza di Chebyshev, con affievolimento della luce sui bordi. Il fantasma si attiva solo quando entra in questo riquadro.
-- **Movimento interpolato (LERP)**: spostamenti fluidi del personaggio e della telecamera su 16 tick a punto fisso (no float).
-- **Delayed Auto-Shift (DAS)**: controlli alla Tetris — delay iniziale di 12 frame e ripetizione ogni 6 frame per il movimento continuo tenendo premuto il D-Pad.
-- **Salto evasivo con Stamina**: A+direzione scavalca il blocco adiacente atterrando 2 tile più in là (la cella intermedia deve essere un muro). Costa 60 punti stamina; la barra si ricarica di 1 punto al secondo.
-- **Corsa con Stamina**: B+direzione fa correre il protagonista: il passo dura 8 frame invece di 16 e consuma 10 stamina per tile, con DAS più rapido per incatenare i tile fluidamente. Se la stamina scende sotto 10 ripiega automaticamente sulla camminata normale.
-- **Progressione livelli (8 livelli, poi finale)**: si parte dal livello 1; raggiungere la botola fa sprofondare nel livello successivo. L'indicatore `L<n>` in alto a sinistra mostra il livello corrente. In caso di sconfitta si ricomincia dall'ultimo livello raggiunto. **La dimensione del labirinto cresce di 2 tile per lato ad ogni livello** (7→9→11→13→15→17→19→21x21 al livello 8). **Difficoltà progressiva**: +1 fantasma per livello (fino a 8), fantasma più veloce (cooldown più corto), stamina che si ricarica più lentamente, e nebbia più stretta (5x5→3x3) dal livello 7. **Superato il livello 8 il gioco finisce** con una schermata finale.
-- **AI del fantasma**: pathfinding greedy con distanza al quadrato (niente sqrt, niente A*), cooldown di 1 secondo tra i passi, hitbox pixel-perfect (12×6 px) per una morte "giusta".
-- **Audio procedurale**: colonna sonora sintetizzata manipolando direttamente i registri APU via VBL interrupt (nessun campione).
-- **Schermate a tutto schermo**: copertina 2-bit nativa per il titolo, immagine "Going Deeper" per la vittoria, metasprite "GAME OVER" per la sconfitta.
-- **Test headless**: pipeline di verifica con PyBoy + OpenCV senza emulatore grafico.
+- **Proiezione isometrica 2.5D**: rendering a diamante (tile 32×16 px) con autotiling dinamico e multi-pass.
+- **Labirinto casuale crescente**: DFS iterativo con stack in WRAM che genera un perfect maze, rotto al 15% per creare loop. La dimensione cresce di 2 tile/lato per livello: 7×7 → 21×21.
+- **Fog of War scalabile**: visibilità basata su Chebyshev. 5×5 (livelli 1-6), 3×3 (livelli 7-8). Il nemico si attiva solo quando entra nella nebbia.
+- **Movimento interpolato (LERP)**: punto fisso `>>4`, no float. 16 frame/passo (8 in corsa).
+- **DAS**: controlli alla Tetris — delay 12 frame, repeat 6 (walk) / 2 (run).
+- **Salto evasivo**: A+direzione, 2 tile, costa 60 stamina. Arco parabolico visivo.
+- **Corsa**: B+direzione, 8 frame/tile, 10 stamina/tile. Fallback a camminata se stamina < 10.
+- **Progressione 8 livelli + finale**: difficoltà crescente (maze, nemici, cooldown, stamina, nebbia). Indicatore `L<n>` in alto a sinistra. Sconfitta → ricomincia dallo stesso livello. Livello 8 → finale tragico.
+- **Multi-nemico**: fino a 8 fantasmi (1 per livello). AI greedy, cooldown scalabile (60→11 frame), hitbox pixel-perfect.
+- **Audio procedurale**: 4 canali APU via VBL interrupt. Title (112 note, 3 canali), gameplay (96), gameover (128), finale dedicato (192, loop).
+- **Schermate**: title con sfondo 2-bit, death con `claimed.png`, Going Deeper testuale, finale tragico con font IBM.
+- **Test headless**: PyBoy + OpenCV + ROM di test isolate.
 
 ### Soundtrack
 
-1. **Title Theme**: solenne e misteriosa, 32 battute sugli accordi La minore, Sol, Fa e Mi.
-2. **Gameplay Theme**: battito ritmico ansioso ("eerie pulse") che accelera la tensione dell'inseguimento.
-3. **Game Over Theme**: concerto tragico polifonico di 128 note con percussioni (noise channel), basso virtuoso e drammatica discesa melodica.
-4. **Going Deeper**: melodia misteriosa discendente di 96 step (Am → Fmaj7 → Dm → E7 → C aug → abisso).
+1. **Title Theme**: 112 note su 3 canali (melodia + basso indipendente + rintocchi noise), ~56 sec in loop. Lamento discendente in Re minore con 7ª armonica (C#) e discesa cromatica nell'abisso.
+2. **Gameplay Theme**: battito ritmico ansioso ("eerie pulse") in La minore → Re minore → Mi7.
+3. **Game Over Theme**: concerto tragico polifonico di 128 note con percussioni (thud + crash).
+4. **Finale**: 192 note (24 accordi), lamento discendente Dm → abisso (C2), loop infinito. CH1 melodia sommessa + CH2 basso profondo + CH4 toll (mid/crash/deep).
+5. **Going Deeper**: melodia misteriosa discendente di 96 step (Am → Fmaj7 → Dm → E7 → C aug → abisso).
 
 ---
 
-## 🛠️ Dettagli tecnici
+## Dettagli tecnici
 
 ### Architettura dei file
-- [`main.c`](src/main.c): entry point, loop VBL sincronizzato, macchina a stati `app_state` (0 = title, 1 = game).
-- [`engine.c`](src/engine.c) / [`engine.h`](src/engine.h): "direttore d'orchestra" — `title_init/update`, `engine_init`, `engine_update`.
-- [`globals.c`](src/globals.c) / [`globals.h`](src/globals.h): stato globale centralizzato (mappa, camera, player, enemy, stamina, `game_over`) per evitare dipendenze circolari tra moduli.
-- [`maze.c`](src/maze.c): generazione procedurale DFS + loop + posizionamento botola.
-- [`player_logic.c`](src/player_logic.c): input, DAS, state machine del movimento, salto, stamina.
-- [`enemy_logic.c`](src/enemy_logic.c): AI greedy, cooldown, rendering nemico, hitbox pixel-perfect.
-- [`render.c`](src/render.c): proiezione isometrica, fog of war, autotiling multi-pass, stamina UI, sprite player.
-- [`sound.c`](src/sound.c): sequencer audio via VBL interrupt, 4 tracce.
-- `tiles.c / player.c / enemy.c / gameover.c / next_level.c / stamina.c / title_bg.c`: asset generati da `png2asset`.
-- [`scripts/`](scripts/): generazione procedurale di tile/sprite (`generate_assets.py`, `generate_enemy.py`), quantizzazione immagini (`process_next_level.py`), test headless.
+- [`main.c`](src/main.c): entry point, loop VBL, `app_state` (0=title, 1=game).
+- [`engine.c`](src/engine.c): orchestrazione, game-over branches (sconfitta/vittoria/finale).
+- [`globals.c`](src/globals.c) / [`globals.h`](src/globals.h): stato globale (mappa `[21][21]`, `map_size`, `fog_radius`, `level`, `num_enemies`, enemy arrays[8], stamina, ecc.).
+- [`maze.c`](src/maze.c): DFS + loop + botola. Array statici in WRAM.
+- [`player_logic.c`](src/player_logic.c): DAS, camminata, corsa, salto, stamina.
+- [`enemy_logic.c`](src/enemy_logic.c): AI greedy multi-entity, cooldown scalabile, hitbox.
+- [`render.c`](src/render.c): iso, fog scalabile, auto-tiling, flush dinamico, HUD.
+- [`sound.c`](src/sound.c): sequencer VBL, 5 tracce + SFX.
+- Asset: `tiles.c`, `player.c`, `enemy.c`, `gameover.c`, `stamina.c`, `level.c`, `claimed.c`, `title_bg.c`.
+- [`scripts/`](scripts/): generazione asset (`generate_assets.py`, `generate_enemy.py`, `generate_level.py`), test.
 
-### Formato delle coordinate isometriche
-Le coordinate logiche `(lx, ly)` vengono convertite in coordinate schermo `(iso_x, iso_y)`:
+### Coordinate isometriche
 ```
-iso_x = (lx - ly) * 2 + 12
-iso_y = (lx + ly) * 1 + 2
+iso_x = (lx - ly) * 2 + 12    iso_y = (lx + ly) + 2
+px = (lx - ly) * 16 + 96      py = (lx + ly) * 8 + 16
 ```
-e in coordinate pixel fisiche per camera/collisione:
-```
-px = (lx - ly) * 16 + 96
-py = (lx + ly) * 8  + 16
-```
-Camera centrata: `scroll_x = px - 64`, `scroll_y = py - 72`.
+Camera: `scroll_x = px - 64`, `scroll_y = py - 72`.
 
-Per un'analisi approfondita di codice, funzionalità e workaround storici, vedi [`doc/AScreamFromTheDark_report.md`](doc/AScreamFromTheDark_report.md).
+Documentazione approfondita: [`doc/`](doc/) — [index](doc/index.md), [report](doc/AScreamFromTheDark_report.md).
 
 ---
 
-## 🚀 Requisiti e build
+## Requisiti e build
 
 ### Prerequisiti
-1. **GBDK-2020** installato in `/home/enne2/.local/gbdk`.
-2. **Python 3** con i pacchetti per la rigenerazione degli asset e i test:
-   ```bash
-   pip install --user Pillow pyboy opencv-python numpy
-   ```
+1. **GBDK-2020** in `/home/enne2/.local/gbdk`.
+2. **Python 3** con: `pip install --user Pillow pyboy opencv-python numpy`
 
 ### Compilazione
 ```bash
 make clean && make
 ```
-Questo comando:
-1. Esegue gli script Python per creare `tiles.png`, `player.png`, `enemy.png`.
-2. Usa `png2asset` per convertire i PNG in sorgenti C.
-3. Usa il compilatore `lcc` di GBDK per compilare e linkare i sorgenti in `build/hello_iso.gb` (e `build/test_gameover.gb`).
+Output: `build/hello_iso.gb` (32 KB) + `build/test_gameover.gb` + `build/test_finale.gb`.
 
 ---
 
-## 🧪 Test e analisi automatica
+## Test
 
-1. **Screenshot** — `python3 scripts/test_pyboy.py`: avvia la ROM in PyBoy per 120 frame e salva `assets/hello_iso_gb.png`.
-2. **Test di movimento in WRAM** — `python3 scripts/test_movement.py`: legge la griglia del labirinto in WRAM (indirizzo risolto dinamicamente via `hello_iso.noi`) e simula pressioni direzionali verificando `player_lx/ly`.
-3. **Rilevamento glitch con OpenCV** — `python3 scripts/opencv_analyze_tiles.py`: esamina lo screenshot cercando disallineamenti o buchi neri tra le giunzioni isometriche.
-4. **ROM di test isolata** — `make build/test_gameover.gb`: renderizza solo player + metasprite GAME OVER per validare la schermata di sconfitta.
-
-La documentazione tecnica dettagliata per modulo è in [`doc/`](doc/).
+1. **Screenshot** — `python3 scripts/test_pyboy.py`
+2. **Movimento WRAM** — `python3 scripts/test_movement.py`
+3. **Glitch OpenCV** — `python3 scripts/opencv_analyze_tiles.py`
+4. **ROM game over** — `make build/test_gameover.gb`
+5. **ROM finale** — `make build/test_finale.gb` (va subito al finale con musica, per test rapidi)

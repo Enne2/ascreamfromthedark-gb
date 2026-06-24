@@ -1,56 +1,92 @@
 # Fisica e Controlli del Giocatore
 
-Il movimento nel gioco è rigidamente vincolato alla griglia (Grid-Based), come nei vecchi RPG (Zelda, Pokémon), per semplificare le collisioni e la leggibilità degli ostacoli.
+## State Machine (Grid-Based)
 
-## State Machine (Blocco Input)
+Il movimento è rigidamente vincolato alla griglia (stile Zelda/Pokémon). Durante `is_moving` (interpolazione LERP su 16 frame, o 8 in corsa) ogni input è ignorato. Questo garantisce movimento perfettamente allineato, senza scivolamenti diagonali.
 
-In `player_logic.c`, l'interpolazione fluida del movimento (il passaggio da una casella all'altra) richiede 16 frame. 
-Durante questo lasso di tempo, la variabile `is_moving` è `true`. Qualsiasi input direzionale proveniente dai tasti (D-Pad) o dal tasto A viene totalmente ignorato finché il movimento sub-tile non si azzera (`move_progress == 16`). Questo impedisce movimenti diagonali non voluti o "scivolamenti" fuori griglia.
+## LERP a Punto Fisso
+
+```c
+px = start_px + ((target_px - start_px) * move_progress) >> 4;  // >>4 = /16
+```
+
+Tutto a punto fisso (no float, no divisione hardware). In corsa `move_progress += 2` → il passo dura 8 frame invece di 16, ma la formula LERP `>>4` resta invariata (raggiunge il target in metà tempo).
 
 ## Delayed Auto-Shift (DAS)
 
-Leggere banalmente il D-Pad a 60 FPS renderebbe il personaggio incontrollabile (si muoverebbe di 4 caselle con una pressione leggermente prolungata). Leggere solo la "singola pressione" (keys_pressed) obbligherebbe a martellare il tasto per avanzare.
+Come in Tetris: il primo tocco muove subito; tenendo premuto, l'input è ignorato per `DAS_DELAY = 12` frame, poi si ripete ogni `DAS_REPEAT = 6` frame (camminata) o `DAS_REPEAT_RUN = 2` (corsa, per incatenare i tile fluidamente).
 
-Abbiamo implementato un DAS, una tecnica tipica del Tetris:
-- Al primo tocco, il giocatore si muove.
-- Se si continua a tenere premuto, l'input viene ignorato per `DAS_DELAY` frames.
-- Superato il delay, l'input si ripete in automatico ogni `DAS_REPEAT` frames.
-Questo rende la navigazione dei corridoi estremamente fluida e confortevole.
+`keys_pressed = keys & ~prev_keys` rileva il fronte di salita (pressione esatta).
 
-## Il Salto e il Costo in Stamina
+## Camminata
 
-Tenendo premuto il tasto `A` assieme a una direzione direzionale, il giocatore scavalca il blocco adiacente atterrando due tile più in là.
-Condizioni per il salto:
-1. La casella di destinazione (`X+2`, `Y+2`) deve essere libera.
-2. La casella intermedia saltata (`X+1`, `Y+1`) DEVE essere un muro (non si può saltare a vuoto sui corridoi).
-3. Il giocatore deve avere almeno 60 punti Stamina.
+Direzione → `move_lx/move_ly` (±1 su un asse). Validazione: `maze[new_ly][new_lx] == 1 || == 2` (pavimento o botola). Se valida, `is_moving = 1`, `move_progress = 0`, start/target impostati.
 
-La stamina si ricarica di 1 punto ogni secondo. Eseguire un salto costa 60 punti, disabilitando ulteriori balzi per un minuto intero. Questo lo rende una manovra evasiva salva-vita estrema e non uno strumento da spam abusivo.
-Visivamente, l'altezza del salto non altera la logica (sempre 2D Grid), ma solo il rendering in `update_player_sprite()`, in cui sottraiamo al posizionamento verticale la formula parabolica `x * (16 - x) / 4`.
+## Corsa (B + direzione)
 
-## La Corsa e il Costo in Stamina
+Tenendo **B** + direzione con stamina ≥ 10:
+- Il passo dura **8 frame** invece di 16 (`is_running = 1`, `move_progress += 2`).
+- Costo: **10 stamina per tile**.
+- DAS più rapido (`DAS_REPEAT_RUN = 2`) per incatenare i tile fluidamente.
+- Se stamina < 10: ripiega silenziosamente su camminata normale (0 costo).
+- La corsa si riattiva da sola quando la stamina torna ≥ 10.
 
-Tenendo premuto il tasto `B` assieme a una direzione direzionale, il giocatore si mette a correre:
-la transizione tra tile dura **8 frame** invece di 16 (l'incremento di `move_progress` raddoppia, mentre la formula LERP a punto fisso `>> 4` resta invariata e raggiunge il target in metà tempo). Ogni tile corso consuma **10 punti Stamina**.
-Il DAS diventa più rapido (`DAS_REPEAT_RUN = 2`) così da incatenare i tile fluidamente quando si tiene premuto B+direzione.
-Se la Stamina scende sotto 10, B+direzione **ripiega silenziosamente su camminata normale** (16 frame, 0 costo); la corsa si riattiva da sola appena la stamina torna ≥ 10. La ricarica resta di 1 punto al secondo, quindi la corsa è uno strumento a scatto: da pieno (100) si possono percorrere fino a 10 tile, dopodiché serve tempo per ricaricarla.
+La stamina si ricarica di 1 punto ogni `stamina_recharge_rate` frame (60 al livello 1, 144 al livello 8 — più lenta ai livelli alti).
 
-## Progressione dei Livelli
+## Salto Evasivo (A + direzione)
 
-Il gioco parte dal **livello 1**. Raggiungere la botola (casella traguardo) significa "sprofondare più giù" (*Going Deeper*): alla pressione di START il livello viene **incrementato** e viene generato un nuovo labirinto. In caso di sconfitta (cattura da parte del fantasma) si **ricomincia dallo stesso livello raggiunto**: il contatore non si azzera, solo il passaggio per il titolo (nuova partita) riparte da 1.
+A+direzione → atterraggio **2 tile** più in là. Condizioni:
+1. La cella intermedia (+1) **DEVE** essere un muro (`maze == 0`).
+2. La cella di arrivo (+2) deve essere pavimento o botola.
+3. Stamina ≥ 60.
 
-## Dimensione crescente del labirinto e difficoltà progressiva
+Costo: 60 stamina. Arco parabolico solo visivo: `y_offset = (move_progress * (16 - move_progress)) >> 2` (apice 16px a frame 8). La logica resta 2D grid-based.
 
-Ad ogni livello la **dimensione del labirinto cresce di 2 tile per lato**: 7x7 (livello 1) fino a **21x21** (livello 8). La dimensione corrente è la variabile globale `map_size` (l'array `maze` è allocato con bound `MAX_MAP_SIZE` = 21). Il DFS genera un perfect maze su `map_size`x`map_size` (le celle dispari sono le stanze, per questo `map_size` è sempre dispari), poi lo rompe con i loop al 15% e posiziona la botola a distanza di Chebyshev ≥ `map_size/2` dalla partenza.
+## Stamina
 
-Oltre alla dimensione, ci sono altri **assi di difficoltà** che scalano col livello:
-- **Numero di fantasmi**: `num_enemies = level` (capped a `MAX_ENEMIES` = 8). Ogni fantasma ha stato indipendente (array) e AI greedy propria; cooldown iniziali sfasati per non sincronizzarli.
-- **Fantasma più veloce**: `enemy_step_cooldown = 60 - 7*(level-1)` (floor 10) — pausa più breve tra i passi ai livelli alti.
-- **Stamina più lenta**: `stamina_recharge_rate = 60 + 12*(level-1)` — la barra si ricarica più lentamente.
-- **Nebbia più stretta**: `fog_radius = 1` (3x3) dal livello 7 (invece di 2 / 5x5).
+- 100 punti massimi.
+- Ricarica: 1 punto ogni `stamina_recharge_rate` frame (60..144, scala col livello).
+- Salto: costa 60 (disabilita ulteriori balzi per ~1 min).
+- Corsa: costa 10/tile (da pieno, ~10 tile di corsa).
+- Barra UI: 5 sprite in alto a destra, conversione `stamina*40/100` → pixel.
 
-**Il gioco finisce dopo il livello 8 con un finale tragico**: superare la botola al livello 8 setta `game_over = 3` (finale) invece di 2 (Going Deeper). Non e' una fuga: la schermata finale (sfondo nero, BGP invertito, testo chiaro col font IBM ricaricato) recita "YOUR TORCH HAS / RUN OUT, / YOU ARE TRAPPED. / JUST ANOTHER SCREAM / FROM THE DARK. / GAME OVER"; START torna al titolo (nuova partita dal livello 1). **Musica dedicata**: un brano originale piu' ricco e coerente (192 step, 24 accordi) — un lamento discendente in Re minore (Dm–C–Bb–A7) che si intensifica con arpeggi alti (lo "scream"), poi cola nell'abisso col basso che scende fino al Do piu' grave e sfuma nel silenzio. Tre canali: CH1 melodia, CH2 basso, CH4 rintocco (toll medio, crash al climax, tonfo profondo nell'abisso). Tempo sommesso (14 frame/nota).
+## Progressione Livelli (8 livelli + finale)
 
-Poiché con labirinti grandi la finestra fog-of-war, proiettata in coordinate isometriche assolute, può cadere fuori dal vecchio range di righe flussato (2-17) a causa del wrapping della mappa 32x32, `draw_map` ora usa un flush **dinamico a 16 righe** centrato sulla iso_y del centro di disegno (con gestione del wrap via due `set_bkg_tiles`). Questo mantiene le prestazioni del progetto originale (16 righe = 512 byte) coprendo la nebbia in qualunque posizione.
+### Transizioni
+- **Titolo → gioco**: `level = 1`, `engine_init()` genera il primo labirinto.
+- **Vittoria (botola) + START**: `level++`, `engine_init()` genera il livello successivo.
+- **Sconfitta + START**: si ricomincia dallo **stesso livello** raggiunto (non si azzera).
+- **Finale (livello 8 superato)**: `game_over = 3` invece di 2.
 
-L'indicatore `L<n>` è mostrato in **alto a sinistra** tramite tre sprite hardware (OAM ID 23–25), disegnati dall'asset `level.png` (11 glifi 8x16: 'L', '0'–'9'). Le decine vengono mostrate solo dal livello 10 in poi (sotto, lo sprite decine è spostato fuori schermo). Come la barra stamina (in alto a destra), l'indicatore è a coordinate-schermo fisse e indipendente dallo scroll isometrico, e viene nascosto durante il game over e sul titolo. La base VRAM dei glifi è allineata a un indice **pari** perché in modalità sprite 8x16 l'hardware ignora il bit meno significativo dell'indice tile.
+### Indicatore HUD
+`L<n>` in alto a sinistra via 3 sprite (OAM 23-25) dall'asset `level.png` (glifi L, 0-9). Aggiornato ogni frame in `engine_update`; nascosto durante game over.
+
+### Difficoltà scalabile (vedi anche `generation.md` e `ai.md`)
+| Assi | Livello 1 | Livello 8 |
+|------|-----------|-----------|
+| Dimensione labirinto | 7×7 | 21×21 |
+| Numero fantasmi | 1 | 8 |
+| Cooldown fantasma | 60 frame | 11 frame |
+| Ricarica stamina | 60 frame/pt | 144 frame/pt |
+| Nebbia | 5×5 | 3×3 (dal L7) |
+
+## Schermate di Fine Gioco
+
+### Sconfitta (`game_over = 1`)
+- 45 frame di "fermo immagine" drammatico.
+- Poi: schermata `claimed.png` a tutto schermo + metasprite "GAME OVER".
+- Musica: concerto tragico polifonico (128 note, noise percussion).
+- START → ricomincia dallo stesso livello.
+
+### Going Deeper (`game_over = 2`, livelli 1-7)
+- 30 frame di dissolvenza.
+- Schermata testuale col font IBM: "GOING DEEPER / LEVEL N".
+- Musica: melodia misteriosa discendente (96 step).
+- START → livello successivo.
+
+### Finale tragico (`game_over = 3`, livello 8)
+- 30 frame di dissolvenza.
+- Sfondo nero (BGP invertito 0x1B), font IBM ricaricato.
+- Testo: "YOUR TORCH HAS / RUN OUT, / YOU ARE TRAPPED. / JUST ANOTHER SCREAM / FROM THE DARK. / GAME OVER".
+- Musica dedicata: 192 step (24 accordi), lamento discendente in Re minore che cola nell'abisso, in loop.
+- START → torna al titolo (nuova partita dal livello 1).
