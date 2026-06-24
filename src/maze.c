@@ -104,29 +104,66 @@ void generate_maze(void) {
         }
     }
     
-    // FASE 3: Calcoliamo il traguardo (Casella di Vittoria).
-    // Invece della coordinata più lontana, scegliamo un punto casuale
-    // lungo il bordo inferiore del labirinto (y = MAP_SIZE - 2).
-    // Questo permette alla scala di apparire ovunque sul bordo sud.
-    uint8_t valid_x[MAP_SIZE];
+    // FASE 3: Posizionamento della Botola (Traguardo).
+    // La botola viene piazzata su una cella calpestabile a "sufficiente distanza"
+    // dalla casella di partenza del giocatore (1,1), cosi' che il traguardo sia
+    // sempre lontano ma possa trovarsi su una qualunque tile del labirinto,
+    // non piu' vincolato al bordo sud. Usiamo la distanza di Chebyshev
+    // (consistente con il resto dell'engine: fog of war, attivazione nemico).
+#define MIN_GOAL_DIST 3
+    uint8_t valid_x[MAP_SIZE * MAP_SIZE];
+    uint8_t valid_y[MAP_SIZE * MAP_SIZE];
     uint8_t num_valid = 0;
-    
-    for (uint8_t x = 1; x < MAP_SIZE - 1; x++) {
-        if (maze[MAP_SIZE - 2][x] == 1) {
-            valid_x[num_valid] = x;
-            num_valid++;
+
+    for (uint8_t y = 1; y < MAP_SIZE - 1; y++) {
+        for (uint8_t x = 1; x < MAP_SIZE - 1; x++) {
+            if (maze[y][x] == 1) {
+                int8_t dx = (int8_t)x - 1;
+                int8_t dy = (int8_t)y - 1;
+                if (dx < 0) dx = -dx;
+                if (dy < 0) dy = -dy;
+                int8_t dist = (dx > dy) ? dx : dy;
+                if (dist >= MIN_GOAL_DIST) {
+                    valid_x[num_valid] = x;
+                    valid_y[num_valid] = y;
+                    num_valid++;
+                }
+            }
         }
     }
-    
+
     if (num_valid > 0) {
-        uint8_t target_x = valid_x[rand() % num_valid];
-        maze[MAP_SIZE - 2][target_x] = 2;
+        uint8_t pick = rand() % num_valid;
+        uint8_t target_x = valid_x[pick];
+        uint8_t target_y = valid_y[pick];
+        maze[target_y][target_x] = 2;
         stairs_lx = target_x;
-        stairs_ly = MAP_SIZE - 2;
+        stairs_ly = target_y;
     } else {
-        // Fallback estremo se la riga in fondo fosse inaccessibile
-        maze[MAP_SIZE - 2][MAP_SIZE - 2] = 2;
-        stairs_lx = MAP_SIZE - 2;
-        stairs_ly = MAP_SIZE - 2;
+        // Fallback estremo: nessuna cella a sufficienza distante (teoricamente
+        // impossibile in un perfect maze 7x7 con partenza 1,1, ma difensivo).
+        // Sceglie la cella calpestabile piu' lontana in assoluto da (1,1).
+        uint8_t best_x = MAP_SIZE - 2;
+        uint8_t best_y = MAP_SIZE - 2;
+        int8_t best_dist = -1;
+        for (uint8_t y = 1; y < MAP_SIZE - 1; y++) {
+            for (uint8_t x = 1; x < MAP_SIZE - 1; x++) {
+                if (maze[y][x] == 1) {
+                    int8_t dx = (int8_t)x - 1;
+                    int8_t dy = (int8_t)y - 1;
+                    if (dx < 0) dx = -dx;
+                    if (dy < 0) dy = -dy;
+                    int8_t dist = (dx > dy) ? dx : dy;
+                    if (dist > best_dist) {
+                        best_dist = dist;
+                        best_x = x;
+                        best_y = y;
+                    }
+                }
+            }
+        }
+        maze[best_y][best_x] = 2;
+        stairs_lx = best_x;
+        stairs_ly = best_y;
     }
 }

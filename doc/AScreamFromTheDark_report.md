@@ -58,7 +58,7 @@ Camera centrata: `scroll_x = px - 64`, `scroll_y = py - 72` (160×144 display �
 ### 3.2 Generazione del labirinto (`maze.c`)
 - **DFS iterativo con stack in WRAM** (`stack_x[49]/stack_y[49]`): evita l'overflow dello stack hardware del LR35902 ricorrendo a un array in RAM. Celle dispari = stanze, celle pari = muri divisori; scava il muro di mezzo con la media aritmetica delle coordinate.
 - **Fase 2 — loop**: riapre muri residui che collegano due corridoi opposti con probabilità 15%. Vitale per il gameplay d'inseguimento (permette di aggirare il fantasma).
-- **Fase 3 — botola**: sceglie un punto **casuale** sul bordo sud (`y = MAP_SIZE-2`) tra le celle calpestabili, invece della "distanza di Manhattan massima" originaria (la doc `generation.md` è rimasta indietro rispetto al codice: vedi §7 Incongruenze). Fallback estremo su `(5,5)` se la riga fosse inaccessibile.
+- **Fase 3 — botola**: sceglie una cella calpestabile **a sufficiente distanza** dalla partenza `(1,1)` (distanza di Chebyshev ≥ `MIN_GOAL_DIST` = 3) tra **tutte** le celle del labirinto, non più vincolata al bordo sud. Fallback estremo sulla cella calpestabile più lontana in assoluto da `(1,1)` se nessuna cella fosse a sufficienza distante (teoricamente impossibile in un perfect maze 7x7).
 
 ### 3.3 Movimento & DAS (`player_logic.c`)
 - **State machine rigida**: durante `is_moving` (16 frame di LERP) ogni input è ignorato → movimento strettamente grid-based stile Zelda/Pokémon.

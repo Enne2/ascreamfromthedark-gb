@@ -20,7 +20,7 @@ Questo genera anelli (loop) all'interno del labirinto, permettendo al giocatore 
 ## Posizionamento del Traguardo (La Botola)
 
 La casella traguardo è una **botola** nel terreno (ID 2) che il giocatore deve raggiungere per "sprofondare più giù" (*Going Deeper*) e avanzare di livello.
-Invece di cercare il punto matematicamente più lontano dalla partenza, l'algoritmo attuale sceglie un **punto casuale sul bordo sud** della mappa (`y = MAP_SIZE - 2`) tra le celle calpestabili di quella riga. Questo permette alla botola di apparire in una posizione imprevedibile lungo il bordo sud ad ogni partita.
-Se, per un caso limite, la riga in fondo fosse inaccessibile, esiste un **fallback estremo** che posiziona la botola nell'angolo `(MAP_SIZE-2, MAP_SIZE-2)`.
+La botola viene piazzata su una qualunque cella calpestabile a **sufficiente distanza** dalla casella di partenza del giocatore `(1,1)`. Si raccolgono tutte le celle `maze[y][x] == 1` la cui distanza di Chebyshev da `(1,1)` sia `>= MIN_GOAL_DIST` (3) e se ne sceglie una a caso. In questo modo il traguardo è sempre lontano dall'inizio ma può trovarsi su una qualunque tile del labirinto, non più vincolato al bordo sud.
+Se, per un caso limite, nessuna cella fosse a sufficienza distante (teoricamente impossibile in un perfect maze 7x7 con partenza 1,1), esiste un **fallback estremo** che posiziona la botola nella cella calpestabile più lontana in assoluto da `(1,1)`.
 
-Nota: storicamente il posizionamento usava la **Distanza di Manhattan** massima rispetto a `1,1`; il comportamento è stato cambiato per aumentare la varietà delle partite. La botola è disegnata con un oggetto complesso a maschera 4-vicini nel Pass 2 del renderer (vedi `graphics.md`).
+La distanza di Chebyshev è coerente col resto dell'engine (fog of war, attivazione del nemico). La botola è disegnata con un oggetto complesso a maschera 4-vicini nel Pass 2 del renderer (vedi `graphics.md`).
