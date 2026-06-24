@@ -184,11 +184,15 @@ const uint16_t eerie_reg_vals[] = {
     1369, 1497, 1589, 1709, 1733, 1709, 1589, 1497
 };
 
+// Title theme: lamento tragico discendente. 4 frasi da 8 note che scendono da
+// La4 fino a La2, con respiri (R) e salti drammatici. Armonizza con la
+// progressione Dm - C - Bb - A (come il finale), impostando il tono sinistro
+// di "A Scream from the Dark" fin dal menu.
 const uint16_t title_melody[32] = {
-    N_A2, N_E3, N_A3, N_E3, N_C4, N_A3, N_E3, N_A2, // Am
-    N_G2, N_D3, N_G3, N_D3, N_B3, N_G3, N_D3, N_G2, // G
-    N_F2, N_C3, N_F3, N_C3, N_A3, N_F3, N_C3, N_F2, // F
-    N_E2, N_B2, N_E3, N_B2, N_GS3, N_E3, N_B2, N_E2  // E
+    N_A3, R, N_F3, R, N_D3, N_E3, R, N_A2,  // 1. Dm: A3..A2, respiro
+    N_F3, R, N_D3, R, N_C3, N_B3, R, N_A2,  // 2. C:  F3..A2, caduta
+    N_E3, N_D3, R, N_A2, N_B2, R, N_A2, R,  // 3. Bb (AS2): E3..A2, sospeso
+    N_D3, R, N_C3, N_B2, R, N_A2, N_E2, R   // 4. A:  D3..E2, abisso
 };
 
 const uint16_t finale_ch1_seq[192] = {
