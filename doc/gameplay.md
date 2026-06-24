@@ -87,6 +87,6 @@ Costo: 60 stamina. Arco parabolico solo visivo: `y_offset = (move_progress * (16
 ### Finale tragico (`game_over = 3`, livello 8)
 - 30 frame di dissolvenza.
 - Sfondo nero (BGP invertito 0x1B), font IBM ricaricato.
-- Testo: "YOUR TORCH HAS / RUN OUT, / YOU ARE TRAPPED. / JUST ANOTHER SCREAM / FROM THE DARK. / GAME OVER".
+- Testo: messaggio tragico (spoiler-free, da scoprire giocando).
 - Musica dedicata: 192 step (24 accordi), lamento discendente in Re minore che cola nell'abisso, in loop.
 - START → torna al titolo (nuova partita dal livello 1).

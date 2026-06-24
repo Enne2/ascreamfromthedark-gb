@@ -15,7 +15,7 @@
 2. **Gameplay** — esplorazione a griglia con camminata, **corsa** (B+direzione), **salto evasivo** (A+direzione), stamina, AI greedy multi-nemico, hitbox pixel-perfect. Indicatore `L<n>` in alto a sinistra.
 3. **Game Over (Sconfitta)** — 45 frame di fermo immagine → schermata `claimed.png` + metasprite "GAME OVER" + musica tragica (128 note). START → ricomincia dallo stesso livello.
 4. **Going Deeper (Vittoria, livelli 1-7)** — schermata testuale "GOING DEEPER / LEVEL N" + melodia misteriosa (96 step). START → livello successivo (più grande, più difficile).
-5. **Finale (Livello 8)** — `game_over = 3`: sfondo nero, "YOUR TORCH HAS / RUN OUT, / YOU ARE TRAPPED. / JUST ANOTHER SCREAM / FROM THE DARK. / GAME OVER" + musica dedicata (192 note, lamento discendente in Re minore, loop). START → titolo.
+5. **Finale (Livello 8)** — `game_over = 3`: sfondo nero, messaggio tragico (spoiler-free) + musica dedicata (192 note, lamento discendente in Re minore, loop). START → titolo.
 
 ---
 
