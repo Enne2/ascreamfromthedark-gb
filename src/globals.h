@@ -47,6 +47,7 @@ extern uint8_t player_dir; // 0=DR, 1=DL, 2=UL, 3=UR
 // Shared variables for interpolated movement (walking/jumping)
 extern uint8_t is_moving;
 extern uint8_t is_jumping;
+extern uint8_t is_running; // B+direction: step in 8 frames instead of 16, costs 10 stamina/tile
 extern uint8_t move_progress; // 0 to 16, tracks the sub-tile animation progress
 extern int8_t start_lx, start_ly;
 extern int8_t target_lx, target_ly;
@@ -54,9 +55,13 @@ extern int16_t start_px, start_py;
 extern int16_t target_px, target_py;
 
 // --- Stamina System ---
-// Stamina powers the jump mechanic. 100 = full. Recharges over time.
+// Stamina powers the jump/run mechanic. 100 = full. Recharges over time.
 extern uint8_t stamina;
 extern uint8_t stamina_recharge_timer;
+
+// --- Level Progression ---
+// Current level (starts at 1, increments each time the hatch is reached).
+extern uint8_t level;
 
 // --- Enemy State ---
 extern uint8_t enemy_lx;

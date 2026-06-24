@@ -9,6 +9,9 @@ static uint8_t das_timer = 0;
 static uint8_t das_active = 0;
 #define DAS_DELAY 12
 #define DAS_REPEAT 6
+#define DAS_REPEAT_RUN 2   // DAS piu' rapido mentre si corre (il passo di corsa dura 8 frame)
+#define RUN_STAMINA_COST 10
+#define RUN_MIN_STAMINA 10
 
 /**
  * Gestisce la logica di movimento del giocatore, i salti e le collisioni.
@@ -23,6 +26,10 @@ static uint8_t das_active = 0;
  * 3. Meccanica del Salto: Premendo A+Direzione, il giocatore può saltare *esattamente* 2 celle 
  *    più in là. Il codice verifica se la cella intermedia (+1) è un ostacolo (0) e se
  *    la cella di atterraggio (+2) è calpestabile. Consuma 60 di stamina per bilanciare il vantaggio tattico.
+ * 4. Meccanica della Corsa: Premendo B+Direzione (con stamina >= 10) il giocatore si mette a correre:
+ *    il passo dura 8 frame invece di 16 (move_progress incrementato di 2) e consuma 10 stamina per tile.
+ *    Il DAS diventa piu' rapido (DAS_REPEAT_RUN) per incatenare i tile fluidamente. Se la stamina
+ *    non basta, ripiega silenziosamente su camminata normale senza consumo.
  */
 void update_player_movement(uint8_t keys, uint8_t prev_keys) {
     // --- Gestione della Stamina ---
@@ -39,7 +46,9 @@ void update_player_movement(uint8_t keys, uint8_t prev_keys) {
     // --- State Machine: Transizione Animazione ---
     // Se siamo nel mezzo di uno spostamento tra tile, calcoliamo i pixel interpolati
     if (is_moving) {
-        move_progress++;
+        // Corsa: il passo dura 8 frame (incremento 2) invece di 16 (incremento 1).
+        // La formula LERP resta a punto fisso (>>4 == /16): move_progress raggiunge 16 in meta' tempo.
+        move_progress += is_running ? 2 : 1;
         
         // Interpolazione lineare (LERP) da start a target
         int16_t px = start_px + (((target_px - start_px) * (int16_t)move_progress) >> 4); // >> 4 equivale a / 16
@@ -62,6 +71,7 @@ void update_player_movement(uint8_t keys, uint8_t prev_keys) {
         if (move_progress == 16) {
             is_moving = 0;
             is_jumping = 0;
+            is_running = 0;
             player_lx = target_lx;
             player_ly = target_ly;
             
@@ -91,9 +101,11 @@ void update_player_movement(uint8_t keys, uint8_t prev_keys) {
 
     // --- Lettura Controlli (Polling) con DAS ---
     uint8_t keys_pressed = keys & ~prev_keys; // Tasti premuti ESATTAMENTE in questo frame
+    // La corsa (B tenuto + stamina) usa un DAS piu' corto per incatenare i tile fluidamente.
+    uint8_t wants_run = (keys & J_B) && (stamina >= RUN_MIN_STAMINA);
 
     if (keys_pressed) {
-        das_timer = DAS_DELAY;
+        das_timer = wants_run ? DAS_REPEAT_RUN : DAS_DELAY;
         das_active = 1;
     } else if (keys && das_active) {
         // Se si tiene premuto un tasto...
@@ -102,7 +114,7 @@ void update_player_movement(uint8_t keys, uint8_t prev_keys) {
         }
         // Se il timer arriva a 0, emuliamo una pressione ripetuta
         if (das_timer == 0 && !is_moving) {
-            das_timer = DAS_REPEAT;
+            das_timer = wants_run ? DAS_REPEAT_RUN : DAS_REPEAT;
             keys_pressed = keys; 
         }
     } else {
@@ -168,7 +180,7 @@ void update_player_movement(uint8_t keys, uint8_t prev_keys) {
             // Se le condizioni di salto falliscono, aggiorna semplicemente il frame per far girare il personaggio
             update_player_sprite();
         } 
-        // 2. Movimento standard (Camminata)
+        // 2. Movimento standard (Camminata o Corsa)
         else {
             int8_t new_lx = player_lx + move_lx;
             int8_t new_ly = player_ly + move_ly;
@@ -178,6 +190,16 @@ void update_player_movement(uint8_t keys, uint8_t prev_keys) {
                 if (maze[new_ly][new_lx] == 1 || maze[new_ly][new_lx] == 2) {
                     is_moving = 1;
                     move_progress = 0;
+                    // Corsa: B + direzione con stamina sufficiente. Il passo dura 8 frame
+                    // (vedi l'incremento di move_progress sopra) e costa 10 stamina per tile.
+                    // Se la stamina non basta, ripiega silenziosamente su camminata normale.
+                    if ((keys & J_B) && stamina >= RUN_MIN_STAMINA) {
+                        is_running = 1;
+                        stamina -= RUN_STAMINA_COST; // 10 stamina per tile (guardia sopra: stamina >= 10)
+                        update_stamina_display();
+                    } else {
+                        is_running = 0;
+                    }
                     start_lx = player_lx;
                     start_ly = player_ly;
                     target_lx = new_lx;

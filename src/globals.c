@@ -18,6 +18,7 @@ uint8_t stairs_ly = 0;
 
 uint8_t is_moving = 0;
 uint8_t is_jumping = 0;
+uint8_t is_running = 0;
 uint8_t move_progress = 0;
 int8_t start_lx, start_ly;
 int8_t target_lx, target_ly;
@@ -26,6 +27,8 @@ int16_t target_px, target_py;
 
 uint8_t stamina = 100;
 uint8_t stamina_recharge_timer = 0;
+
+uint8_t level = 1;
 
 uint8_t enemy_lx = 0;
 uint8_t enemy_ly = 0;

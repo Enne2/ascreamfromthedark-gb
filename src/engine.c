@@ -19,6 +19,7 @@
 #include "gameover.h"
 #include "next_level.h"
 #include "stamina.h"
+#include "level.h"
 #include "title_bg.h"
 
 /**
@@ -96,6 +97,8 @@ void engine_init(void) {
     set_sprite_data(player_TILE_COUNT + enemy_TILE_COUNT, gameover_TILE_COUNT, gameover_tiles);
     // Load stamina_tiles AFTER the background tiles to prevent VRAM overlap in the shared block (indices > 127)
     set_sprite_data(tiles_TILE_COUNT, stamina_TILE_COUNT * 2, stamina_tiles);
+    // Load the level HUD glyph tiles right after stamina (blank, 'L', '0'..'9').
+    set_sprite_data(LEVEL_SPRITE_BASE, level_TILE_COUNT, level_tiles);
 
     // SPAWN DEL GIOCATORE
     player_lx = 1;
@@ -143,11 +146,13 @@ void engine_init(void) {
     stamina_recharge_timer = 0;
     is_jumping = 0;
     is_moving = 0;
+    is_running = 0;
 
     // Richiama render.c per forzare un disegno iniziale della scena
     draw_map(player_lx, player_ly);
     update_camera();
     update_player_sprite();
+    update_level_display(); // Mostra l'indicatore livello (top-left)
 }
 
 /**
@@ -156,6 +161,10 @@ void engine_init(void) {
  */
 void engine_update(uint8_t keys, uint8_t prev_keys) {
     
+    // Indicatore livello: aggiornato ogni frame. Si nasconde da solo quando
+    // `game_over` e' attivo (sconfitta/vittoria) grazie al check interno.
+    update_level_display();
+
     // --- GESTIONE STATO DI FINE GIOCO (Sconfitta o Vittoria) ---
     if (game_over) {
         if (game_over_timer > 0) {
@@ -217,6 +226,12 @@ void engine_update(uint8_t keys, uint8_t prev_keys) {
             // Attende la pressione di START per riavviare
             if ((keys & J_START) && !(prev_keys & J_START)) {
                 // Nasconde la grafica testuale e ricarica tutto l'engine
+                // Vittoria (Going Deeper) -> livello successivo; Sconfitta -> nuova partita dal livello 1.
+                if (game_over == 2) {
+                    level++;
+                } else {
+                    level = 1;
+                }
                 move_metasprite(gameover_metasprites[0], player_TILE_COUNT + enemy_TILE_COUNT, 8, 0, 0);
                 SHOW_SPRITES;
                 engine_init();

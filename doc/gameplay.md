@@ -27,3 +27,16 @@ Condizioni per il salto:
 
 La stamina si ricarica di 1 punto ogni secondo. Eseguire un salto costa 60 punti, disabilitando ulteriori balzi per un minuto intero. Questo lo rende una manovra evasiva salva-vita estrema e non uno strumento da spam abusivo.
 Visivamente, l'altezza del salto non altera la logica (sempre 2D Grid), ma solo il rendering in `update_player_sprite()`, in cui sottraiamo al posizionamento verticale la formula parabolica `x * (16 - x) / 4`.
+
+## La Corsa e il Costo in Stamina
+
+Tenendo premuto il tasto `B` assieme a una direzione direzionale, il giocatore si mette a correre:
+la transizione tra tile dura **8 frame** invece di 16 (l'incremento di `move_progress` raddoppia, mentre la formula LERP a punto fisso `>> 4` resta invariata e raggiunge il target in metà tempo). Ogni tile corso consuma **10 punti Stamina**.
+Il DAS diventa più rapido (`DAS_REPEAT_RUN = 2`) così da incatenare i tile fluidamente quando si tiene premuto B+direzione.
+Se la Stamina scende sotto 10, B+direzione **ripiega silenziosamente su camminata normale** (16 frame, 0 costo); la corsa si riattiva da sola appena la stamina torna ≥ 10. La ricarica resta di 1 punto al secondo, quindi la corsa è uno strumento a scatto: da pieno (100) si possono percorrere fino a 10 tile, dopodiché serve tempo per ricaricarla.
+
+## Progressione dei Livelli
+
+Il gioco parte dal **livello 1**. Raggiungere la botola (casella traguardo) significa "sprofondare più giù" (*Going Deeper*): alla pressione di START il livello viene **incrementato** e viene generato un nuovo labirinto. La sconfitta (cattura da parte del fantasma) riporta invece al **livello 1**.
+
+L'indicatore `L<n>` è mostrato in **alto a sinistra** tramite tre sprite hardware (OAM ID 23–25), disegnati dall'asset `level.png` (11 glifi 8x16: 'L', '0'–'9'). Le decine vengono mostrate solo dal livello 10 in poi (sotto, lo sprite decine è spostato fuori schermo). Come la barra stamina (in alto a destra), l'indicatore è a coordinate-schermo fisse e indipendente dallo scroll isometrico, e viene nascosto durante il game over e sul titolo. La base VRAM dei glifi è allineata a un indice **pari** perché in modalità sprite 8x16 l'hardware ignora il bit meno significativo dell'indice tile.

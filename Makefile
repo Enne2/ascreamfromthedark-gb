@@ -9,14 +9,15 @@ SCRIPTS_DIR = scripts
 BUILD_DIR = build
 
 # C source files
-SRCS = $(SRC_DIR)/main.c $(SRC_DIR)/engine.c $(SRC_DIR)/globals.c $(SRC_DIR)/maze.c $(SRC_DIR)/sound.c $(SRC_DIR)/render.c $(SRC_DIR)/player_logic.c $(SRC_DIR)/enemy_logic.c $(SRC_DIR)/tiles.c $(SRC_DIR)/player.c $(SRC_DIR)/enemy.c $(SRC_DIR)/gameover.c $(SRC_DIR)/next_level.c $(SRC_DIR)/stamina.c $(SRC_DIR)/title_bg.c
+SRCS = $(SRC_DIR)/main.c $(SRC_DIR)/engine.c $(SRC_DIR)/globals.c $(SRC_DIR)/maze.c $(SRC_DIR)/sound.c $(SRC_DIR)/render.c $(SRC_DIR)/player_logic.c $(SRC_DIR)/enemy_logic.c $(SRC_DIR)/tiles.c $(SRC_DIR)/player.c $(SRC_DIR)/enemy.c $(SRC_DIR)/gameover.c $(SRC_DIR)/next_level.c $(SRC_DIR)/stamina.c $(SRC_DIR)/level.c $(SRC_DIR)/title_bg.c
 
 all: $(BUILD_DIR)/hello_iso.gb $(BUILD_DIR)/test_gameover.gb
 
 # Generate image assets
-generate_images: $(SCRIPTS_DIR)/generate_assets.py $(SCRIPTS_DIR)/generate_enemy.py
+generate_images: $(SCRIPTS_DIR)/generate_assets.py $(SCRIPTS_DIR)/generate_enemy.py $(SCRIPTS_DIR)/generate_level.py
 	cd $(ASSETS_DIR) && python3 ../$(SCRIPTS_DIR)/generate_assets.py
 	cd $(ASSETS_DIR) && python3 ../$(SCRIPTS_DIR)/generate_enemy.py
+	cd $(ASSETS_DIR) && python3 ../$(SCRIPTS_DIR)/generate_level.py
 
 # Convert image assets to C source files
 generate_c_assets: generate_images
@@ -26,6 +27,7 @@ generate_c_assets: generate_images
 	$(PNG2ASSET) $(ASSETS_DIR)/gameover.png -c $(SRC_DIR)/gameover.c -bpp 2 -noflip -keep_palette_order
 	$(PNG2ASSET) $(ASSETS_DIR)/next_level.png -c $(SRC_DIR)/next_level.c -map -bpp 2 -noflip -max_palettes 1
 	$(PNG2ASSET) $(ASSETS_DIR)/stamina.png -c $(SRC_DIR)/stamina.c -bpp 2 -noflip -keep_palette_order
+	$(PNG2ASSET) $(ASSETS_DIR)/level.png -c $(SRC_DIR)/level.c -sw 8 -sh 16 -bpp 2 -noflip -keep_palette_order -keep_duplicate_tiles
 	$(PNG2ASSET) $(ASSETS_DIR)/title_bg.png -c $(SRC_DIR)/title_bg.c -map -bpp 2 -noflip -keep_palette_order -max_palettes 1
 
 # Main ROM target
@@ -46,4 +48,5 @@ clean:
 	rm -f $(SRC_DIR)/gameover.c $(SRC_DIR)/gameover.h
 	rm -f $(SRC_DIR)/next_level.c $(SRC_DIR)/next_level.h
 	rm -f $(SRC_DIR)/stamina.c $(SRC_DIR)/stamina.h
+	rm -f $(SRC_DIR)/level.c $(SRC_DIR)/level.h
 	rm -f $(SRC_DIR)/title_bg.c $(SRC_DIR)/title_bg.h

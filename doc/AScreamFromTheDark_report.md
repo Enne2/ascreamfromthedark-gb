@@ -61,11 +61,17 @@ Camera centrata: `scroll_x = px - 64`, `scroll_y = py - 72` (160×144 display �
 - **Fase 3 — botola**: sceglie una cella calpestabile **a sufficiente distanza** dalla partenza `(1,1)` (distanza di Chebyshev ≥ `MIN_GOAL_DIST` = 3) tra **tutte** le celle del labirinto, non più vincolata al bordo sud. Fallback estremo sulla cella calpestabile più lontana in assoluto da `(1,1)` se nessuna cella fosse a sufficienza distante (teoricamente impossibile in un perfect maze 7x7).
 
 ### 3.3 Movimento & DAS (`player_logic.c`)
-- **State machine rigida**: durante `is_moving` (16 frame di LERP) ogni input è ignorato → movimento strettamente grid-based stile Zelda/Pokémon.
-- **LERP** a punto fisso: `px = start_px + ((target_px - start_px) * move_progress) >> 4` (divisione per 16 via shift, no float).
-- **DAS (Delayed Auto Shift)** alla Tetris: `DAS_DELAY=12` frame di attesa iniziale, poi `DAS_REPEAT=6` frame tra ripetizioni. `keys_pressed = keys & ~prev_keys` rileva il fronte di salita.
-- **Salto evasivo**: A+direzione → atterraggio 2 tile più in là. Condizioni: cella intermedia DEVE essere muro (`maze==0`), cella di arrivo pavimento/vittoria, stamina ≥ 60. Consuma 60 stamina. L'arco parabolico è solo visivo: `y_offset = (move_progress * (16 - move_progress)) >> 2` (apice 16px a frame 8). La logica resta 2D.
-- **Stamina**: ricarica 1 punto/s (60 frame). Barra UI a 5 segmenti sprite (ID 18–22) in alto a destra, conversione `stamina*40/100` → pixel.
+- **State machine rigida**: durante `is_moving` (16 frame di LERP, o 8 in corsa) ogni input è ignorato → movimento strettamente grid-based stile Zelda/Pokémon.
+- **LERP** a punto fisso: `px = start_px + ((target_px - start_px) * move_progress) >> 4`. In corsa `move_progress` incrementa di 2/frame → il passo dura 8 frame invece di 16.
+- **DAS (Delayed Auto Shift)** alla Tetris: `DAS_DELAY=12` frame di attesa iniziale, poi `DAS_REPEAT=6` frame tra ripetizioni (camminata); `DAS_REPEAT_RUN=2` mentre si corre per incatenare i tile.
+- **Salto evasivo**: A+direzione → atterraggio 2 tile più in là. Condizioni: cella intermedia DEVE essere muro, cella di arrivo pavimento/vittoria, stamina ≥ 60. Consuma 60 stamina. Arco parabolico solo visivo: `y_offset = (move_progress * (16 - move_progress)) >> 2`.
+- **Corsa**: B+direzione (stamina ≥ 10) → passo di 8 frame, costo 10 stamina/tile, DAS rapido. Se stamina < 10 ripiega su camminata normale senza costo.
+- **Stamina**: ricarica 1 punto/s. Barra UI a 5 sprite (ID 18–22) in alto a destra.
+
+### 3.3b Progressione livelli (`globals.c` + `engine.c` + `render.c`)
+- Variabile globale `level` (parte da 1). Il titolo→gioco la azzera a 1 (`main.c`); raggiungere la botola (vittoria, `game_over==2`) e premere START fa `level++` prima di `engine_init()` (nuovo labirinto); la sconfitta (`game_over==1`) + START fa `level = 1`.
+- Indicatore HUD `L<n>` in alto a sinistra via 3 sprite (OAM ID 23–25), disegnati dall'asset `level.png` (11 glifi 8x16: 'L', '0'–'9') generato da `scripts/generate_level.py` e convertito con `png2asset -keep_duplicate_tiles` (senza deduplica, così il glifo di ordine i occupa i tile 2i/2i+1 in ordine prevedibile).
+- **VRAM**: i glifi sono caricati a `LEVEL_SPRITE_BASE = allineamento-pari-di (tiles_TILE_COUNT + stamina_TILE_COUNT*2)` (~204) — base PARI perché in modalità 8x16 l'hardware ignora il LSB dell'indice tile; e disgiunta dal blocco tile del background e dalla stamina (stesso workaround del commit 93deb35). `update_level_display()` viene chiamata ogni frame in `engine_update` e si nasconde da sola quando `game_over` è attivo.
 
 ### 3.4 Fog of War (`render.c` + `enemy_logic.c`)
 Distanza di **Chebyshev** `max(|dx|,|dy|)` invece di euclidea (no sqrt, no lookup): quadrato di visibilità 5×5.

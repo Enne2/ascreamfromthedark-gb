@@ -7,6 +7,7 @@
 #include "enemy.h"
 #include "gameover.h"
 #include "stamina.h"
+#include "level.h"
 #include "maze.h"
 
 uint8_t get_tile_state(int8_t cx, int8_t cy, int8_t lx, int8_t ly) {
@@ -74,6 +75,54 @@ void update_stamina_display(void) {
         
         // Imposta il frame dell'animazione
         set_sprite_tile(18 + i, base_tile + tile_idx * 2);
+    }
+}
+
+/**
+ * Aggiorna l'indicatore del livello (HUD in alto a sinistra).
+ *
+ * Sviluppo & Scelte Architetturali:
+ * 1. Come la barra stamina, usiamo sprite hardware (ID 23..25) perche' il background
+ *    e' scrollato isometricamente e non e' adatto a un HUD fisso. Gli sprite sono
+ *    coordinate-schermo fisse, indipendenti dallo scroll.
+ * 2. L'asset `level.png` contiene 12 glifi 8x16 (blank, 'L', '0'..'9'), caricati in
+ *    VRAM sprite subito dopo i tile della stamina (base = tiles_TILE_COUNT +
+ *    stamina_TILE_COUNT) per evitare sovrapposizioni con i tile del background
+ *    (stesso workaround del commit 93deb35 per la VRAM condivisa).
+ * 3. Si mostrano 3 sprite: 'L', decine (blank se livello < 10), unita'.
+ *    Viene nascosto durante il game over (sconfitta/vittoria) e sul titolo.
+ */
+#define LEVEL_HUD_SPRITE   23   // primo OAM ID del livello (dopo stamina 18..22)
+
+void update_level_display(void) {
+    // Nascondi durante il game over (sconfitta o vittoria/Going Deeper).
+    if (game_over) {
+        for (uint8_t i = 0; i < 3; i++) {
+            move_sprite(LEVEL_HUD_SPRITE + i, 0, 0);
+        }
+        return;
+    }
+
+    uint8_t base = LEVEL_SPRITE_BASE;
+    uint8_t tens = (level / 10) % 10;
+    uint8_t ones = level % 10;
+
+    // Mappatura glifi in level.png (11 glifi, ognuno 8x16 = 2 tile, in ordine grazie
+    // a -keep_duplicate_tiles). Indice di ordine i -> tile (base + 2*i):
+    //   0 = 'L', 1..10 = '0'..'9'. Quindi la cifra d -> indice (1+d) -> tile base + (1+d)*2.
+    set_sprite_tile(LEVEL_HUD_SPRITE + 0, base + 0 * 2);                 // 'L' (ordine 0)
+    set_sprite_tile(LEVEL_HUD_SPRITE + 2, base + (1 + ones) * 2);         // unita' (cifra ones)
+
+    // Posizionamento in alto a sinistra (offset hardware +8 x, +16 y).
+    move_sprite(LEVEL_HUD_SPRITE + 0, 8, 16);    // 'L' a screen x=0
+    move_sprite(LEVEL_HUD_SPRITE + 2, 24, 16);    // unita' a screen x=16
+
+    // Decine: mostrate solo se livello >= 10 (altrimenti sprite nascosto offscreen).
+    if (level >= 10) {
+        set_sprite_tile(LEVEL_HUD_SPRITE + 1, base + (1 + tens) * 2);    // decine (cifra tens)
+        move_sprite(LEVEL_HUD_SPRITE + 1, 16, 16);  // screen x=8
+    } else {
+        move_sprite(LEVEL_HUD_SPRITE + 1, 0, 0);    // nascondi decine
     }
 }
 

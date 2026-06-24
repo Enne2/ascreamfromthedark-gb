@@ -12,6 +12,8 @@ Un survival-horror procedurale in prospettiva isometrica per Game Boy (DMG/CGB),
 - **Movimento interpolato (LERP)**: spostamenti fluidi del personaggio e della telecamera su 16 tick a punto fisso (no float).
 - **Delayed Auto-Shift (DAS)**: controlli alla Tetris — delay iniziale di 12 frame e ripetizione ogni 6 frame per il movimento continuo tenendo premuto il D-Pad.
 - **Salto evasivo con Stamina**: A+direzione scavalca il blocco adiacente atterrando 2 tile più in là (la cella intermedia deve essere un muro). Costa 60 punti stamina; la barra si ricarica di 1 punto al secondo.
+- **Corsa con Stamina**: B+direzione fa correre il protagonista: il passo dura 8 frame invece di 16 e consuma 10 stamina per tile, con DAS più rapido per incatenare i tile fluidamente. Se la stamina scende sotto 10 ripiega automaticamente sulla camminata normale.
+- **Progressione livelli**: si parte dal livello 1; raggiungere la botola fa sprofondare nel livello successivo (livello +1). L'indicatore `L<n>` in alto a sinistra (sprite HUD, come la barra stamina in alto a destra) mostra il livello corrente e si aggiorna ad ogni livello superato. La sconfitta riporta al livello 1.
 - **AI del fantasma**: pathfinding greedy con distanza al quadrato (niente sqrt, niente A*), cooldown di 1 secondo tra i passi, hitbox pixel-perfect (12×6 px) per una morte "giusta".
 - **Audio procedurale**: colonna sonora sintetizzata manipolando direttamente i registri APU via VBL interrupt (nessun campione).
 - **Schermate a tutto schermo**: copertina 2-bit nativa per il titolo, immagine "Going Deeper" per la vittoria, metasprite "GAME OVER" per la sconfitta.
