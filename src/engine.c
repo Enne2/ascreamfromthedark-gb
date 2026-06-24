@@ -81,7 +81,12 @@ void engine_init(void) {
 
     // Usa il registro divisore hardware (DIV_REG) per seedare l'RNG. Garantisce labirinti diversi ogni volta.
     initrand(DIV_REG);
-    
+
+    // Dimensione del labirinto crescente col livello: +2 tile per livello a partire da 7,
+    // capped a MAX_MAP_SIZE (17). Sempre dispari (per il pattern stanza/muro del DFS).
+    map_size = MAP_SIZE + 2 * (level - 1);
+    if (map_size > MAX_MAP_SIZE) map_size = MAX_MAP_SIZE;
+
     // DELEGA LA GENERAZIONE: Chiede al modulo maze.c di creare l'array della mappa
     generate_maze();
     
@@ -106,8 +111,8 @@ void engine_init(void) {
     // Fallback di sicurezza: Cerca la prima casella libera se 1,1 è occupato (teoricamente impossibile col DFS)
     if (maze[player_ly][player_lx] == 0) {
         uint8_t found = 0;
-        for (uint8_t y = 1; y < MAP_SIZE - 1; y++) {
-            for (uint8_t x = 1; x < MAP_SIZE - 1; x++) {
+        for (uint8_t y = 1; y < map_size - 1; y++) {
+            for (uint8_t x = 1; x < map_size - 1; x++) {
                 if (maze[y][x] == 1) {
                     player_lx = x;
                     player_ly = y;
@@ -120,17 +125,21 @@ void engine_init(void) {
     }
 
     // SPAWN DEL NEMICO
-    // Cerca randomicamente un punto lontano almeno 3 celle dal giocatore
+    // Cerca randomicamente un punto lontano almeno map_size/2 celle dal giocatore
+    // (scala con la dimensione del labirinto: in una mappa grande il fantasma parte
+    // lontano e non si attiva finché non entra nel cono visivo 5x5 del fog of war).
+    uint8_t enemy_min_dist = map_size / 2;
+    if (enemy_min_dist < 3) enemy_min_dist = 3;
     while (1) {
-        uint8_t rx = rand() % MAP_SIZE;
-        uint8_t ry = rand() % MAP_SIZE;
+        uint8_t rx = rand() % map_size;
+        uint8_t ry = rand() % map_size;
         if (maze[ry][rx] == 1) {
             int8_t dx = (int8_t)rx - (int8_t)player_lx;
             int8_t dy = (int8_t)ry - (int8_t)player_ly;
             if (dx < 0) dx = -dx;
             if (dy < 0) dy = -dy;
             int8_t dist = (dx > dy) ? dx : dy;
-            if (dist >= 3) {
+            if (dist >= (int8_t)enemy_min_dist) {
                 enemy_lx = rx;
                 enemy_ly = ry;
                 break;

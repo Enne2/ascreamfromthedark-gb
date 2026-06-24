@@ -56,9 +56,10 @@ py = (lx + ly) * 8  + 16
 Camera centrata: `scroll_x = px - 64`, `scroll_y = py - 72` (160×144 display → centro 80×72, con offset hardware).
 
 ### 3.2 Generazione del labirinto (`maze.c`)
-- **DFS iterativo con stack in WRAM** (`stack_x[49]/stack_y[49]`): evita l'overflow dello stack hardware del LR35902 ricorrendo a un array in RAM. Celle dispari = stanze, celle pari = muri divisori; scava il muro di mezzo con la media aritmetica delle coordinate.
-- **Fase 2 — loop**: riapre muri residui che collegano due corridoi opposti con probabilità 15%. Vitale per il gameplay d'inseguimento (permette di aggirare il fantasma).
-- **Fase 3 — botola**: sceglie una cella calpestabile **a sufficiente distanza** dalla partenza `(1,1)` (distanza di Chebyshev ≥ `MIN_GOAL_DIST` = 3) tra **tutte** le celle del labirinto, non più vincolata al bordo sud. Fallback estremo sulla cella calpestabile più lontana in assoluto da `(1,1)` se nessuna cella fosse a sufficienza distante (teoricamente impossibile in un perfect maze 7x7).
+- **DFS iterativo con stack in WRAM** (`stack_x/y` statici, sized `(MAX_MAP_SIZE/2)^2`): evita l'overflow dello stack hardware del LR35902. Celle dispari = stanze, celle pari = muri divisori; scava il muro di mezzo con la media aritmetica delle coordinate.
+- **Dimensione crescente col livello**: `map_size = MAP_SIZE + 2*(level-1)`, capped a `MAX_MAP_SIZE`=17 (sempre dispari). L'array `maze` è allocato `[MAX_MAP_SIZE][MAX_MAP_SIZE]` (289 byte) e i moduli usano `map_size` come bound runtime.
+- **Fase 2 — loop**: riapre muri residui che collegano due corridoi opposti con probabilità 15%. Vitale per il gameplay d'inseguimento.
+- **Fase 3 — botola**: sceglie una cella calpestabile a distanza di Chebyshev ≥ `map_size/2` dalla partenza `(1,1)` (soglia scalata: 3 per 7x7, 8 per 17x17), tra **tutte** le celle del labirinto. Fallback sulla cella più lontana in assoluto.
 
 ### 3.3 Movimento & DAS (`player_logic.c`)
 - **State machine rigida**: durante `is_moving` (16 frame di LERP, o 8 in corsa) ogni input è ignorato → movimento strettamente grid-based stile Zelda/Pokémon.
@@ -87,7 +88,7 @@ Distanza di **Chebyshev** `max(|dx|,|dy|)` invece di euclidea (no sqrt, no looku
 - Questo evita l'uso di sprite hardware per la botola (che causerebbero flickering per il limite di 10 sprite/scanline) e contiene il consumo di VRAM (limite 256 tile).
 
 ### 3.6 Ottimizzazione rendering
-Trasferisce solo le 16 righe visibili invece di tutte le 32: `set_bkg_tiles(0, 2, 32, 16, &map_buffer[2*32])`. Aggiornamento a `move_progress==8` (metà passo) per fluidità del fog of war. `map_buffer` usato con wrap `& 31` per gestire lo scroll modulare.
+`memset` azzera `map_buffer` (32x32) ad ogni `draw_map`, poi disegna solo la finestra fog 5x5 (~25 tile). Trasferisce l'intera mappa 32x32 al background hardware (`set_bkg_tiles(0,0,32,32,map_buffer)`): necessario perché con labirinti grandi (`map_size` > 7) la finestra fog, proiettata in coordinate iso assolute, può cadere fuori dal range di righe che la vecchia ottimizzazione (righe 2-17) flussava, a causa del wrapping `& 31`. `draw_map` è chiamato solo ai passi del movimento (frame 8 e completamento, non ogni frame), quindi il flush completo è sostenibile. Aggiornamento a `move_progress==8` (metà passo) per fluidità del fog of war. `map_buffer` usato con wrap `& 31` per gestire lo scroll modulare.
 
 ### 3.7 AI del fantasma (`enemy_logic.c`)
 - **Greedy invece di A***: confronta la distanza al quadrato `dx²+dy²` delle 4 celle adiacenti calpestabili e sceglie la minima. No sqrt (pesante su 4 MHz), no heap/nodi (frame drops inammissibili). Difetto voluto: si incastra in vicoli a U → diventa una dinamica di gameplay (seminarlo col level design).

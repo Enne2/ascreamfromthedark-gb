@@ -11,7 +11,7 @@
 #include "maze.h"
 
 uint8_t get_tile_state(int8_t cx, int8_t cy, int8_t lx, int8_t ly) {
-    if (lx < 0 || lx >= MAP_SIZE || ly < 0 || ly >= MAP_SIZE) return 0;
+    if (lx < 0 || (uint8_t)lx >= map_size || ly < 0 || (uint8_t)ly >= map_size) return 0;
     if (maze[ly][lx] == 0) return 0;
     int8_t dx = lx - cx;
     int8_t dy = ly - cy;
@@ -150,12 +150,12 @@ void draw_map(uint8_t center_x, uint8_t center_y) {
     int8_t start_x = center_x - 2;
     if (start_x < 0) start_x = 0;
     int8_t end_x = center_x + 2;
-    if (end_x >= MAP_SIZE) end_x = MAP_SIZE - 1;
+    if ((uint8_t)end_x >= map_size) end_x = map_size - 1;
     
     int8_t start_y = center_y - 2;
     if (start_y < 0) start_y = 0;
     int8_t end_y = center_y + 2;
-    if (end_y >= MAP_SIZE) end_y = MAP_SIZE - 1;
+    if ((uint8_t)end_y >= map_size) end_y = map_size - 1;
     
     // Processiamo la mappa in DUE passate per risolvere il problema dell'overlapping isometrico.
     // L'engine disegna da Nord a Sud. I tile a Sud sovrascrivono la metà inferiore dei tile a Nord.
@@ -248,10 +248,13 @@ void draw_map(uint8_t center_x, uint8_t center_y) {
     
     update_stamina_display();
     
-    // Ottimizzazione hardware critica: trasferire tutta la mappa (1024 bytes) via set_bkg_tiles
-    // causa lag e sfarfallii (VRAM access). Trasferiamo solo le righe da 2 a 17 (16 righe totali),
-    // che è la porzione visibile del Game Boy (160x144 px) in cui si svolge l'azione.
-    set_bkg_tiles(0, 2, 32, 16, &map_buffer[2 * 32]);
+    // Trasferiamo l'intera mappa 32x32 (1024 byte) al Background hardware.
+    // Con labirinti grandi (map_size > 7) la finestra fog-of-war 5x5, proiettata in
+    // coordinate isometriche assolute, puo' cadere in righe OLTRE il vecchio range
+    // 2-17 (a causa del wrapping & 31), quindi non basta piu' flussare solo 16 righe.
+    // draw_map e' chiamato solo ai passi del movimento (non ogni frame), quindi il
+    // costo del flush completo e' sostenibile.
+    set_bkg_tiles(0, 0, 32, 32, map_buffer);
 }
 
 /**

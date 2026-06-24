@@ -22,9 +22,11 @@ extern volatile uint8_t game_over;
 extern volatile uint8_t game_over_timer;
 
 // --- Map Data ---
-#define MAP_SIZE 7
-// The generated maze: 0 = Wall, 1 = Floor, 2 = Victory Tile
-extern uint8_t maze[MAP_SIZE][MAP_SIZE];
+#define MAP_SIZE 7        // initial maze size (level 1); must be odd
+#define MAX_MAP_SIZE 17   // hard cap for maze growth (odd); used as the array bound
+// The generated maze: 0 = Wall, 1 = Floor, 2 = Victory Tile (hatch)
+extern uint8_t map_size;  // current maze side length (grows with level, MAP_SIZE..MAX_MAP_SIZE)
+extern uint8_t maze[MAX_MAP_SIZE][MAX_MAP_SIZE];
 
 // --- Camera & Rendering ---
 // Map buffer used to draw the isometric tiles into the Game Boy Background map
@@ -36,9 +38,7 @@ extern int8_t scroll_y;
 extern uint8_t stairs_lx;
 extern uint8_t stairs_ly;
 
-// --- Mappa e Entità ---
-// The generated maze: 0 = Wall, 1 = Floor, 2 = Victory Tile
-extern uint8_t maze[MAP_SIZE][MAP_SIZE];
+// --- Mappa e Entita ---
 extern uint8_t player_lx;
 extern uint8_t player_ly;
 extern uint8_t player_dir; // 0=DR, 1=DL, 2=UL, 3=UR

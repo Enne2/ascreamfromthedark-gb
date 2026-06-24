@@ -4,7 +4,8 @@
 volatile uint8_t game_over = 0;
 volatile uint8_t game_over_timer = 0;
 
-uint8_t maze[MAP_SIZE][MAP_SIZE];
+uint8_t map_size = MAP_SIZE;
+uint8_t maze[MAX_MAP_SIZE][MAX_MAP_SIZE];
 uint8_t map_buffer[32 * 32];
 
 uint8_t player_lx = 1;

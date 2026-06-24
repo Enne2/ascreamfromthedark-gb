@@ -2,7 +2,7 @@
 
 ## Algoritmo Depth-First Search (DFS)
 
-Per garantire che ogni sessione di gioco sia unica, il labirinto viene generato proceduralmente ad ogni avvio (usando `DIV_REG` hardware del Game Boy come seed pseudo-casuale).
+Per garantire che ogni sessione di gioco sia unica, il labirinto viene generato proceduralmente ad ogni avvio (usando `DIV_REG` hardware del Game Boy come seed pseudo-casuale). La **dimensione del labirinto cresce col livello**: la variabile globale `map_size` parte da `MAP_SIZE` (7) al livello 1 e aumenta di 2 per livello fino al cap `MAX_MAP_SIZE` (17) — quindi 7x7, 9x9, 11x11, 13x13, 15x15, 17x17. `map_size` è sempre dispari perchè il DFS usa le celle dispari come stanze e le pari come muri divisori.
 
 L'algoritmo utilizzato in `maze.c` è un **Depth-First Search (DFS)** con Backtracking, modellato per creare un "Perfect Maze" (labirinto perfetto in cui ogni cella è raggiungibile tramite un unico percorso possibile e senza cicli).
 La mappa è concettualmente divisa in:

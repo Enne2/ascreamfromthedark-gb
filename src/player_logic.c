@@ -144,7 +144,7 @@ void update_player_movement(uint8_t keys, uint8_t prev_keys) {
             int8_t land_ly = player_ly + move_ly * 2;
             
             // Verifica che il salto cada all'interno del labirinto
-            if (land_lx >= 0 && land_lx < MAP_SIZE && land_ly >= 0 && land_ly < MAP_SIZE) {
+            if (land_lx >= 0 && (uint8_t)land_lx < map_size && land_ly >= 0 && (uint8_t)land_ly < map_size) {
                 // Condizioni del salto:
                 // a) La cella intermedia DEVE essere un muro (maze == 0)
                 // b) La cella di arrivo DEVE essere un pavimento o vittoria (maze == 1 o 2)
@@ -185,7 +185,7 @@ void update_player_movement(uint8_t keys, uint8_t prev_keys) {
             int8_t new_lx = player_lx + move_lx;
             int8_t new_ly = player_ly + move_ly;
 
-            if (new_lx >= 0 && new_lx < MAP_SIZE && new_ly >= 0 && new_ly < MAP_SIZE) {
+            if (new_lx >= 0 && (uint8_t)new_lx < map_size && new_ly >= 0 && (uint8_t)new_ly < map_size) {
                 // Se la destinazione è pavimento normale o casella di vittoria
                 if (maze[new_ly][new_lx] == 1 || maze[new_ly][new_lx] == 2) {
                     is_moving = 1;
