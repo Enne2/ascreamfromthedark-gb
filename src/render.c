@@ -6,7 +6,6 @@
 #include "player.h"
 #include "enemy.h"
 #include "gameover.h"
-#include "victory.h"
 #include "stamina.h"
 #include "maze.h"
 
