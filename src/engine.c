@@ -233,30 +233,30 @@ void engine_update(uint8_t keys, uint8_t prev_keys) {
                     set_bkg_data(0, next_level_TILE_COUNT, next_level_tiles);
                     set_bkg_tiles(0, 0, 20, 18, next_level_map);
                 } else if (game_over == 3) {
-                    // FINALE: livello 8 superato, il gioco finisce. Schermata di chiusura
-                    // con testo ricavato dal font IBM (ricaricato perche' il gameplay lo
-                    // aveva sovrascritto coi tile del labirinto). Scriviamo direttamente
-                    // nel map_buffer (tile = ASCII - 32) senza dipendere da printf.
+                    // FINALE TRAGICO: livello 8 superato, ma non e' una fuga. La traccia
+                    // si e' esaurita, sei intrappolato. Sfondo nero (BGP invertito) + testo
+                    // chiaro col font IBM (ricaricato: il gameplay lo aveva sovrascritto).
                     HIDE_SPRITES;
                     SCX_REG = 0;
                     SCY_REG = 0;
+                    BGP_REG = 0x1B; // palette invertita: sfondo nero, testo chiaro
                     font_init();
                     font_t end_font = font_load(font_ibm);
                     font_set(end_font);
-                    memset(map_buffer, 0, sizeof(map_buffer)); // tile 0 = spazio (sfondo)
-                    ending_puttext(4, 6, "YOU ESCAPED");
-                    ending_puttext(3, 8, "THE DARKNESS");
-                    ending_puttext(2, 11, "LEVEL 8 CLEARED");
-                    ending_puttext(3, 14, "PRESS START");
+                    memset(map_buffer, 0, sizeof(map_buffer)); // tile 0 = spazio
+                    ending_puttext(3, 4,  "YOUR TORCH HAS");
+                    ending_puttext(6, 5,  "RUN OUT,");
+                    ending_puttext(2, 7,  "YOU ARE TRAPPED.");
+                    ending_puttext(0, 10, "JUST ANOTHER SCREAM");
+                    ending_puttext(3, 11, "FROM THE DARK.");
+                    ending_puttext(5, 14, "GAME OVER");
                     set_bkg_tiles(0, 0, 32, 32, map_buffer);
                 }
                 
                 // Imposta i timer audio per far iniziare la musica finale dal modulo sound.c
                 // La musica verrà suonata dall'interrupt play_music_tick in background.
-                if (game_over == 1) {
-                    // Start gameover sequence state
-                    // gameover_music_timer/step are handled in play_music_tick inside sound.c automatically
-                    // We just trigger a starting dramatic beat.
+                if (game_over == 1 || game_over == 3) {
+                    // Start gameover sequence state (tragic beat: sconfitta o finale)
                     NR21_REG = 0x80;
                     NR22_REG = 0xF3; 
                     NR23_REG = 0x2C; 

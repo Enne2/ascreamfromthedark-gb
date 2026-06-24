@@ -49,7 +49,7 @@ Oltre alla dimensione, ci sono altri **assi di difficoltà** che scalano col liv
 - **Stamina più lenta**: `stamina_recharge_rate = 60 + 12*(level-1)` — la barra si ricarica più lentamente.
 - **Nebbia più stretta**: `fog_radius = 1` (3x3) dal livello 7 (invece di 2 / 5x5).
 
-**Il gioco finisce dopo il livello 8**: superare la botola al livello 8 setta `game_over = 3` (finale) invece di 2 (Going Deeper). La schermata finale usa il font IBM ricaricato per stampare "YOU ESCAPED / THE DARKNESS / LEVEL 8 CLEARED / PRESS START"; START torna al titolo (nuova partita dal livello 1).
+**Il gioco finisce dopo il livello 8 con un finale tragico**: superare la botola al livello 8 setta `game_over = 3` (finale) invece di 2 (Going Deeper). Non e' una fuga: la schermata finale (sfondo nero, BGP invertito, testo chiaro col font IBM ricaricato) recita "YOUR TRAIL HAS / RUN OUT, / YOU ARE TRAPPED. / JUST ANOTHER SCREAM / FROM THE DARK. / GAME OVER"; START torna al titolo (nuova partita dal livello 1). La musica e' la stessa tragica sequenza del Game Over (128 note, noise channel).
 
 Poiché con labirinti grandi la finestra fog-of-war, proiettata in coordinate isometriche assolute, può cadere fuori dal vecchio range di righe flussato (2-17) a causa del wrapping della mappa 32x32, `draw_map` ora usa un flush **dinamico a 16 righe** centrato sulla iso_y del centro di disegno (con gestione del wrap via due `set_bkg_tiles`). Questo mantiene le prestazioni del progetto originale (16 righe = 512 byte) coprendo la nebbia in qualunque posizione.
 

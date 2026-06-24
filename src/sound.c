@@ -296,7 +296,7 @@ void play_music_tick(void) {
 
     if (game_over) { // ENDGAME
         if (game_over_timer == 0) { // Se il ritardo di fine partita è terminato
-            if (game_over == 1) { // Defeat (Ghost)
+            if (game_over == 1 || game_over == 3) { // Defeat (Ghost) o Finale tragico
                 gameover_music_timer++;
                 if (gameover_music_timer >= 10) { // 10 frames per note (~6 notes/sec)
                     gameover_music_timer = 0;
@@ -305,7 +305,7 @@ void play_music_tick(void) {
                         gameover_music_step++;
                     }
                 }
-            } else if (game_over == 2 || game_over == 3) { // Next Level (Going Deeper) o Finale
+            } else if (game_over == 2) { // Next Level (Going Deeper)
                 victory_music_timer++;
                 if (victory_music_timer >= 15) { // 15 frames per note = 4 notes/sec
                     victory_music_timer = 0;
