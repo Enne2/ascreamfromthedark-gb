@@ -233,12 +233,10 @@ void engine_update(uint8_t keys, uint8_t prev_keys) {
         if (!hint_displayed) {
             hint_displayed = 1;
             HIDE_SPRITES;
-            SCX_REG = 0;
-            SCY_REG = 0;
             font_init();
             font_t hint_font = font_load(font_ibm);
             font_set(hint_font);
-            BGP_REG = 0x1B;
+            BGP_REG = 0x1B; // palette invertita (sfondo nero, testo chiaro)
             memset(map_buffer, 0, sizeof(map_buffer));
             ending_puttext(3, 2, "A SCREAM FROM");
             ending_puttext(6, 3, "THE DARK");
@@ -248,13 +246,25 @@ void engine_update(uint8_t keys, uint8_t prev_keys) {
             ending_puttext(2, 10, "B RUN");
             ending_puttext(2, 12, "PRESS B START");
             ending_puttext(4, 14, "SELECT HELP");
-            set_bkg_tiles(0, 0, 32, 32, map_buffer);
+            // Usa il WINDOW layer (tile map separato a 0x9C00) per il testo:
+            // il BG map del gameplay (0x9800) resta intatto -> niente garbage
+            // quando si chiude l'hint. move_win(7,0) allinea a sinistra (-7 offset).
+            set_win_tiles(0, 0, 32, 32, map_buffer);
+            move_win(7, 0);
+            SHOW_WIN;
         }
         // B chiude la schermata e riprende il gioco
         if ((keys & J_B) && !(prev_keys & J_B)) {
+            HIDE_WIN; // nascondi il Window: il BG map del gameplay e' intatto
             BGP_REG = 0xE4;
+            // Ripristina i tile del maze in VRAM (font_load li aveva sovrascritti)
             set_bkg_data(0, tiles_TILE_COUNT, tiles_tiles);
-            draw_map(player_lx, player_ly);
+            // Ricarica i tile degli sprite (stessa tile RAM condivisa)
+            set_sprite_data(0, player_TILE_COUNT, player_tiles);
+            set_sprite_data(player_TILE_COUNT, enemy_TILE_COUNT, enemy_tiles);
+            set_sprite_data(tiles_TILE_COUNT, stamina_TILE_COUNT * 2, stamina_tiles);
+            set_sprite_data(LEVEL_SPRITE_BASE, level_TILE_COUNT, level_tiles);
+            draw_map(player_lx, player_ly); // ridisegna la scena (tile ripristinati)
             update_camera();
             update_player_sprite();
             SHOW_SPRITES;
