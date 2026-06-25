@@ -20,6 +20,7 @@
 #include "stamina.h"
 #include "level.h"
 #include "title_bg.h"
+#include "screens/screens.h"
 
 /**
  * Inizializza la schermata del titolo
@@ -196,27 +197,6 @@ void engine_init(void) {
 }
 
 /**
- * Scrive una stringa nel map_buffer (copria RAM della BG map 32x32) usando gli indici
- * tile del font IBM (tile = ASCII - 32, il font parte dallo spazio). Usato per la
- * schermata finale senza dipendere da printf/console.
- */
-static void ending_puttext(uint8_t col, uint8_t row, const char *s) {
-    uint8_t i = 0;
-    while (s[i]) {
-        if (col + i < 32) {
-            map_buffer[(uint16_t)row * 32 + col + i] = (uint8_t)(s[i] - ' ');
-        }
-        i++;
-    }
-}
-
-static void ending_putdigit(uint8_t col, uint8_t row, uint8_t digit) {
-    if (col < 32) {
-        map_buffer[(uint16_t)row * 32 + col] = (uint8_t)(digit + ('0' - ' '));
-    }
-}
-
-/**
  * Loop Principale di Aggiornamento del Gioco (chiamato ad ogni Frame ~60 FPS).
  * Questo metodo funge da "Direttore d'Orchestra", delegando i compiti ai moduli specializzati.
  */
@@ -232,26 +212,7 @@ void engine_update(uint8_t keys, uint8_t prev_keys) {
     if (hint_active) {
         if (!hint_displayed) {
             hint_displayed = 1;
-            HIDE_SPRITES;
-            font_init();
-            font_t hint_font = font_load(font_ibm);
-            font_set(hint_font);
-            BGP_REG = 0x1B; // palette invertita (sfondo nero, testo chiaro)
-            memset(map_buffer, 0, sizeof(map_buffer));
-            ending_puttext(3, 2, "A SCREAM FROM");
-            ending_puttext(6, 3, "THE DARK");
-            ending_puttext(3, 5, "FIND THE HATCH");
-            ending_puttext(4, 8, "DPAD WALK");
-            ending_puttext(2, 9, "A JUMP ABYSS");
-            ending_puttext(2, 10, "B RUN");
-            ending_puttext(2, 12, "PRESS B START");
-            ending_puttext(4, 14, "SELECT HELP");
-            // Usa il WINDOW layer (tile map separato a 0x9C00) per il testo:
-            // il BG map del gameplay (0x9800) resta intatto -> niente garbage
-            // quando si chiude l'hint. move_win(7,0) allinea a sinistra (-7 offset).
-            set_win_tiles(0, 0, 32, 32, map_buffer);
-            move_win(7, 0);
-            SHOW_WIN;
+            show_instructions();
         }
         // B chiude la schermata e riprende il gioco
         if ((keys & J_B) && !(prev_keys & J_B)) {
@@ -287,58 +248,11 @@ void engine_update(uint8_t keys, uint8_t prev_keys) {
             // Quando scade il timer drammatico...
             if (game_over_timer == 0) {
                 if (game_over == 1) {
-                    // Sconfitta: schermata testuale a tutto schermo (font IBM).
-                    // (Era l'immagine claimed.png, sostituita con testo per ridurre
-                    // l'occupazione ROM e fare spazio alla schermata istruzioni.)
-                    HIDE_SPRITES;
-                    SCX_REG = 0;
-                    SCY_REG = 0;
-                    BGP_REG = 0x1B; // palette invertita (sfondo nero, testo chiaro)
-                    font_init();
-                    font_t dead_font = font_load(font_ibm);
-                    font_set(dead_font);
-                    memset(map_buffer, 0, sizeof(map_buffer));
-                    ending_puttext(5, 3,  "YOU DIED");
-                    ending_puttext(2, 5,  "THE DARK CLAIMS");
-                    ending_puttext(5, 6,  "ANOTHER");
-                    ending_puttext(2, 9,  "JUST ANOTHER SCREAM");
-                    ending_puttext(3, 10, "FROM THE DARK.");
-                    ending_puttext(5, 14, "GAME OVER");
-                    set_bkg_tiles(0, 0, 32, 32, map_buffer);
+                    show_death();
                 } else if (game_over == 2) {
-                    // Going Deeper: schermata di transizione testuale (font IBM).
-                    // (Era un'immagine, sostituita con testo per ridurre l'occupazione ROM
-                    // e fare spazio alla schermata istruzioni.)
-                    HIDE_SPRITES;
-                    SCX_REG = 0;
-                    SCY_REG = 0;
-                    font_init();
-                    font_t gd_font = font_load(font_ibm);
-                    font_set(gd_font);
-                    memset(map_buffer, 0, sizeof(map_buffer));
-                    ending_puttext(2, 7,  "GOING DEEPER");
-                    ending_puttext(3, 9,  "LEVEL");
-                    ending_putdigit(9, 9, (uint8_t)(level + 1));
-                    set_bkg_tiles(0, 0, 32, 32, map_buffer);
+                    show_going_deeper();
                 } else if (game_over == 3) {
-                    // FINALE TRAGICO: livello 8 superato, ma non e' una fuga. La traccia
-                    // si e' esaurita, sei intrappolato. Sfondo nero (BGP invertito) + testo
-                    // chiaro col font IBM (ricaricato: il gameplay lo aveva sovrascritto).
-                    HIDE_SPRITES;
-                    SCX_REG = 0;
-                    SCY_REG = 0;
-                    BGP_REG = 0x1B; // palette invertita: sfondo nero, testo chiaro
-                    font_init();
-                    font_t end_font = font_load(font_ibm);
-                    font_set(end_font);
-                    memset(map_buffer, 0, sizeof(map_buffer)); // tile 0 = spazio
-                    ending_puttext(3, 4,  "YOUR TORCH HAS");
-                    ending_puttext(6, 5,  "RUN OUT,");
-                    ending_puttext(2, 7,  "YOU ARE TRAPPED.");
-                    ending_puttext(0, 10, "JUST ANOTHER SCREAM");
-                    ending_puttext(3, 11, "FROM THE DARK.");
-                    ending_puttext(5, 14, "GAME OVER");
-                    set_bkg_tiles(0, 0, 32, 32, map_buffer);
+                    show_finale();
                 }
                 
                 // Imposta i timer audio per far iniziare la musica finale dal modulo sound.c
