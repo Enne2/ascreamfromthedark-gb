@@ -239,7 +239,12 @@ void engine_update(uint8_t keys, uint8_t prev_keys) {
         hint_displayed = 0;
     }
 
-    // --- GESTIONE STATO DI FINE GIOCO (Sconfitta o Vittoria) ---
+    // --- CHEAT: SELECT+A+B = vinci il livello (per test) ---
+    if ((keys & J_SELECT) && (keys & J_A) && (keys & J_B) && !game_over) {
+        game_over = 2; // Victory / Going Deeper
+        game_over_timer = 30; // timer drammatico (mezzo secondo)
+        sound_reset_music_state();
+    }
 
     // --- GESTIONE STATO DI FINE GIOCO (Sconfitta o Vittoria) ---
     if (game_over) {
