@@ -218,59 +218,9 @@ const uint16_t title_bass[112] = {
     N_D3, R, R, R, R, R, R, R
 };
 
-const uint16_t finale_ch1_seq[192] = {
-    N_A4, R, N_F4, R, N_D4, R, N_A3, R,
-    N_A4, N_F4, N_D4, N_A3, N_F4, N_D4, N_A3, R,
-    N_G4, R, N_E4, R, N_C4, R, N_G3, R,
-    N_F4, R, N_D4, R, N_AS3, R, N_F3, R,
-    N_E4, R, N_CS4, R, N_A3, R, N_E3, R,
-    N_A4, N_F4, N_D4, N_A3, N_A4, N_F4, N_D4, R,
-    N_A4, N_A4, N_G4, N_F4, N_E4, N_F4, N_D4, R,
-    N_G4, N_F4, N_E4, N_D4, N_C4, N_D4, N_E4, R,
-    N_F4, N_F4, N_E4, N_D4, N_C4, N_AS3, N_A3, R,
-    N_E4, N_E4, N_D4, N_CS4, N_B3, N_CS4, N_E4, R,
-    N_A5, R, N_A5, N_G5, N_F5, N_E5, N_D5, R,
-    N_A5, N_F5, N_D5, N_A4, N_F5, N_D5, N_A4, R,
-    N_G5, R, N_G5, N_F5, N_E5, N_D5, N_C5, R,
-    N_F5, R, N_F5, N_E5, N_D5, N_C5, N_AS4, R,
-    N_E5, N_E5, N_F5, N_E5, N_CS5, N_A4, N_CS5, R,
-    N_D5, N_C5, N_B4, N_A4, N_G4, N_F4, N_E4, R,
-    N_A4, N_G4, N_F4, N_E4, N_D4, N_C4, N_AS3, N_A3,
-    N_D4, R, N_C4, R, N_AS3, R, N_A3, R,
-    N_D4, R, N_C4, R, N_AS3, R, N_A3, R,
-    N_E3, R, R, R, N_A3, R, R, R,
-    N_D3, R, R, R, R, R, R, R,
-    N_D3, R, R, R, N_C2, R, R, R,
-    N_C2, R, R, R, R, R, R, R,
-    R, R, R, R, R, R, R, R
-};
 
-const uint16_t finale_ch2_seq[192] = {
-    N_D3, R, R, R, R, R, R, R,
-    N_A2, R, R, R, R, R, R, R,
-    N_C3, R, R, R, R, R, R, R,
-    N_AS2, R, R, R, R, R, R, R,
-    N_A2, R, R, R, N_E3, R, R, R,
-    N_D3, R, R, R, R, R, R, R,
-    N_D3, R, N_A2, R, N_D3, R, N_A2, R,
-    N_C3, R, N_G2, R, N_C3, R, N_G2, R,
-    N_AS2, R, N_F2, R, N_AS2, R, N_F2, R,
-    N_A2, R, N_E3, R, N_A2, R, N_E3, R,
-    N_D3, R, R, R, N_A2, R, R, R,
-    N_D3, R, N_A2, R, N_D3, R, N_A2, R,
-    N_C3, R, N_G2, R, N_C3, R, N_G2, R,
-    N_AS2, R, N_F2, R, N_AS2, R, N_F2, R,
-    N_A2, R, N_E3, R, N_A2, R, N_E3, R,
-    N_D3, N_C3, N_AS2, N_A2, N_G2, N_F2, N_E2, R,
-    N_A2, N_G2, N_F2, N_E2, N_D3, N_C3, N_AS2, N_A2,
-    N_D3, R, N_C3, R, N_AS2, R, N_A2, R,
-    N_D3, R, N_C3, R, N_AS2, R, N_A2, R,
-    N_A2, R, R, R, N_E3, R, R, R,
-    N_D3, R, R, R, R, R, R, R,
-    N_D3, R, R, R, N_C2, R, R, R,
-    N_C2, R, R, R, R, R, R, R,
-    R, R, R, R, R, R, R, R
-};
+
+
 
 void sound_reset_music_state(void) {
     music_timer = 0;
@@ -326,38 +276,14 @@ void play_gameover_step(uint8_t step) {
     }
 }
 
+// Finale music RIMOSSA dalla ROM (archiviata in assets/finale_music.txt).
+// Suona solo silenzio drammatico (canali spenti): il tone del finale
+// (tragedia, spegnimento della torcia) e' gia' comunicato dal testo
+// "YOUR TORCH HAS RUN OUT..." su schermo nero.
 void play_finale_step(uint8_t step) {
-    if (step < 192) {
-        uint16_t n1 = finale_ch1_seq[step];
-        if (n1 != R) {
-            NR10_REG = 0x00;
-            NR11_REG = 0x80;
-            NR12_REG = 0xA2; // soft, long fade: somber melody
-            NR13_REG = n1 & 0xFF;
-            NR14_REG = (n1 >> 8) | 0x80;
-        }
-        uint16_t n2 = finale_ch2_seq[step];
-        if (n2 != R) {
-            NR21_REG = 0x80;
-            NR22_REG = 0xD1; // deep bass, slow fade
-            NR23_REG = n2 & 0xFF;
-            NR24_REG = (n2 >> 8) | 0x80;
-        }
-        // CH4 noise toll at the start of each chord (every 8 steps):
-        // mid toll by default, crash at the scream climax, deep toll in the abyss.
-        if (step % 8 == 0) {
-            NR41_REG = 0x01;
-            NR42_REG = 0xB2;
-            if (step >= 160) {
-                NR43_REG = 0x70; // deep toll (abyss)
-            } else if (step == 80 || step == 88 || step == 112) {
-                NR43_REG = 0x42; // crash (climax)
-            } else {
-                NR43_REG = 0x68; // mid toll
-            }
-            NR44_REG = 0x80;
-        }
-    }
+    (void)step;
+    NR12_REG = 0x00; NR14_REG = 0x80; // CH1 off
+    NR22_REG = 0x00; NR24_REG = 0x80; // CH2 off
 }
 
 void play_victory_step(uint8_t step) {

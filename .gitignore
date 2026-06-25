@@ -8,6 +8,8 @@
 *.noi
 *.asm
 *.state
+# Finale music archived externally — not compiled into ROM for now
+assets/finale_music.txt
 
 # Compiled ROMs
 *.gb
