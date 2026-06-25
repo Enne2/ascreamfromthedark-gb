@@ -45,3 +45,5 @@ int8_t enemy_target_lx[MAX_ENEMIES], enemy_target_ly[MAX_ENEMIES];
 int16_t enemy_start_px[MAX_ENEMIES], enemy_start_py[MAX_ENEMIES];
 int16_t enemy_target_px[MAX_ENEMIES], enemy_target_py[MAX_ENEMIES];
 uint8_t enemy_cooldown[MAX_ENEMIES] = {0};
+volatile uint8_t hint_active = 0;
+volatile uint8_t hint_displayed = 0;

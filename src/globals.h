@@ -75,4 +75,11 @@ extern int16_t enemy_start_px[MAX_ENEMIES], enemy_start_py[MAX_ENEMIES];
 extern int16_t enemy_target_px[MAX_ENEMIES], enemy_target_py[MAX_ENEMIES];
 extern uint8_t enemy_cooldown[MAX_ENEMIES];
 
+// --- Instructions Screen ---
+// hint_active: 1 = mostra la schermata istruzioni (all'inizio del livello 1,
+// o quando il giocatore preme SELECT). Chiusura con B.
+// hint_displayed: 1 = la schermata e' gia' stata renderizzata questo frame.
+extern volatile uint8_t hint_active;
+extern volatile uint8_t hint_displayed;
+
 #endif

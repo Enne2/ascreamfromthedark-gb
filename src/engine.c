@@ -19,7 +19,6 @@
 #include "gameover.h"
 #include "stamina.h"
 #include "level.h"
-#include "claimed.h"
 #include "title_bg.h"
 
 /**
@@ -63,11 +62,17 @@ void title_update(uint8_t keys, uint8_t prev_keys) {
  */
 void engine_init(void) {
     SPRITES_8x16; // Imposta la modalità Sprite Alti (16 pixel invece di 8)
-    
+
     // Hard reset Audio
     NR52_REG = 0x80;
     NR50_REG = 0x77;
     NR51_REG = 0xFF;
+
+    // Reset hint SUBITO (all'inizio della funzione, non alla fine:
+    // la ROM a 32KB e' piena e il linker potrebbe troncare la coda).
+    hint_active = 0;
+    hint_displayed = 0;
+    if (level == 1) hint_active = 1;
     
     // Carica il font testuale di sistema (IBM)
     font_init();
@@ -216,10 +221,54 @@ static void ending_putdigit(uint8_t col, uint8_t row, uint8_t digit) {
  * Questo metodo funge da "Direttore d'Orchestra", delegando i compiti ai moduli specializzati.
  */
 void engine_update(uint8_t keys, uint8_t prev_keys) {
-    
+
     // Indicatore livello: aggiornato ogni frame. Si nasconde da solo quando
     // `game_over` e' attivo (sconfitta/vittoria) grazie al check interno.
     update_level_display();
+
+    // --- SCHERMATA ISTRUZIONI (livello 1 o SELECT per ri-mostrarla) ---
+    // Testuale con font IBM. Stesso pattern del finale (game_over==3) e della
+    // sconfitta (game_over==1). Si chiude con B; SELECT la ri-apre in gioco.
+    if (hint_active) {
+        if (!hint_displayed) {
+            hint_displayed = 1;
+            HIDE_SPRITES;
+            SCX_REG = 0;
+            SCY_REG = 0;
+            font_init();
+            font_t hint_font = font_load(font_ibm);
+            font_set(hint_font);
+            BGP_REG = 0x1B;
+            memset(map_buffer, 0, sizeof(map_buffer));
+            ending_puttext(3, 2, "A SCREAM FROM");
+            ending_puttext(6, 3, "THE DARK");
+            ending_puttext(3, 5, "FIND THE HATCH");
+            ending_puttext(4, 8, "DPAD WALK");
+            ending_puttext(2, 9, "A JUMP ABYSS");
+            ending_puttext(2, 10, "B RUN");
+            ending_puttext(2, 12, "PRESS B START");
+            ending_puttext(4, 14, "SELECT HELP");
+            set_bkg_tiles(0, 0, 32, 32, map_buffer);
+        }
+        // B chiude la schermata e riprende il gioco
+        if ((keys & J_B) && !(prev_keys & J_B)) {
+            BGP_REG = 0xE4;
+            set_bkg_data(0, tiles_TILE_COUNT, tiles_tiles);
+            draw_map(player_lx, player_ly);
+            update_camera();
+            update_player_sprite();
+            SHOW_SPRITES;
+            hint_active = 0;
+        }
+        return; // gioco in pausa mentre la schermata e' attiva
+    }
+    // SELECT in gioco: ri-mostra la schermata istruzioni
+    if ((keys & J_SELECT) && !(prev_keys & J_SELECT) && !game_over) {
+        hint_active = 1;
+        hint_displayed = 0;
+    }
+
+    // --- GESTIONE STATO DI FINE GIOCO (Sconfitta o Vittoria) ---
 
     // --- GESTIONE STATO DI FINE GIOCO (Sconfitta o Vittoria) ---
     if (game_over) {
@@ -228,17 +277,28 @@ void engine_update(uint8_t keys, uint8_t prev_keys) {
             // Quando scade il timer drammatico...
             if (game_over_timer == 0) {
                 if (game_over == 1) {
-                    // Sconfitta: schermata "claimed" a tutto schermo + metasprite GAME OVER
+                    // Sconfitta: schermata testuale a tutto schermo (font IBM).
+                    // (Era l'immagine claimed.png, sostituita con testo per ridurre
+                    // l'occupazione ROM e fare spazio alla schermata istruzioni.)
                     HIDE_SPRITES;
                     SCX_REG = 0;
                     SCY_REG = 0;
-                    BGP_REG = 0xE4; // palette standard (claimed ha la sua)
-                    set_bkg_data(0, claimed_TILE_COUNT, claimed_tiles);
-                    set_bkg_tiles(0, 0, 20, 18, claimed_map);
+                    BGP_REG = 0x1B; // palette invertita (sfondo nero, testo chiaro)
+                    font_init();
+                    font_t dead_font = font_load(font_ibm);
+                    font_set(dead_font);
+                    memset(map_buffer, 0, sizeof(map_buffer));
+                    ending_puttext(5, 3,  "YOU DIED");
+                    ending_puttext(2, 5,  "THE DARK CLAIMS");
+                    ending_puttext(5, 6,  "ANOTHER");
+                    ending_puttext(2, 9,  "JUST ANOTHER SCREAM");
+                    ending_puttext(3, 10, "FROM THE DARK.");
+                    ending_puttext(5, 14, "GAME OVER");
+                    set_bkg_tiles(0, 0, 32, 32, map_buffer);
                 } else if (game_over == 2) {
                     // Going Deeper: schermata di transizione testuale (font IBM).
                     // (Era un'immagine, sostituita con testo per ridurre l'occupazione ROM
-                    // e fare spazio alla schermata "claimed" della morte.)
+                    // e fare spazio alla schermata istruzioni.)
                     HIDE_SPRITES;
                     SCX_REG = 0;
                     SCY_REG = 0;
