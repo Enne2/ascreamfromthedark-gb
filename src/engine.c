@@ -241,7 +241,11 @@ void engine_update(uint8_t keys, uint8_t prev_keys) {
 
     // --- CHEAT: SELECT+A+B = vinci il livello (per test) ---
     if ((keys & J_SELECT) && (keys & J_A) && (keys & J_B) && !game_over) {
-        game_over = 2; // Victory / Going Deeper
+        if (level >= 8) {
+            game_over = 3; // Finale tragico (livello 8 completato)
+        } else {
+            game_over = 2; // Victory / Going Deeper
+        }
         game_over_timer = 30; // timer drammatico (mezzo secondo)
         sound_reset_music_state();
     }
@@ -284,8 +288,8 @@ void engine_update(uint8_t keys, uint8_t prev_keys) {
             // Attende la pressione di START per riavviare
             if ((keys & J_START) && !(prev_keys & J_START)) {
                 if (game_over == 2) {
-                    // Going Deeper -> livello successivo
-                    level++;
+                    // Going Deeper -> livello successivo (max 8)
+                    if (level < 8) level++;
                     move_metasprite(gameover_metasprites[0], player_TILE_COUNT + enemy_TILE_COUNT, 8, 0, 0);
                     SHOW_SPRITES;
                     engine_init();
