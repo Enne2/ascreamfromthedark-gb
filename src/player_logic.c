@@ -80,6 +80,17 @@ void update_player_movement(uint8_t keys, uint8_t prev_keys) {
             if (fall_offset > 0) {
                 game_over = 1; // sconfitta
                 game_over_timer = 30; // timer per animazione di caduta
+                // Suono di caduta: pitch sweep verso il basso (CH1) + rumore (CH4)
+                NR10_REG = 0x7F; // sweep down, massimo shift
+                NR11_REG = 0x80; // 50% duty
+                NR12_REG = 0xF1; // volume max, fade down lento
+                NR13_REG = 0xFF; // freq alta (parte acuta)
+                NR14_REG = 0x87; // trigger + sweep abilitato
+                // Rumore di caduta (CH4)
+                NR41_REG = 0x02;
+                NR42_REG = 0xA1; // volume alto, fade down
+                NR43_REG = 0x60; // freq medio-bassa
+                NR44_REG = 0x80;
                 return;
             }
             
