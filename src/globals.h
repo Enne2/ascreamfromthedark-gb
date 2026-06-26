@@ -82,4 +82,8 @@ extern uint8_t enemy_cooldown[MAX_ENEMIES];
 extern volatile uint8_t hint_active;
 extern volatile uint8_t hint_displayed;
 
+// --- Credits Screen ---
+// credits_active: 1 = mostra la schermata crediti (SELECT nel menu titolo)
+extern volatile uint8_t credits_active;
+
 #endif

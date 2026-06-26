@@ -12,9 +12,11 @@ void show_death(void) {
     font_t dead_font = font_load(font_ibm);
     font_set(dead_font);
     memset(map_buffer, 0, sizeof(map_buffer));
-    ending_puttext(2, 5,  "THE DARK CLAIMED");
-    ending_puttext(8, 7,  "YOU");
-    ending_puttext(4, 14, "PRESS START");
-    ending_puttext(5, 15, "AND RETRY");
+    ending_puttext(5, 3,  "YOU DIED");
+    ending_puttext(2, 5,  "THE DARK CLAIMS");
+    ending_puttext(5, 6,  "ANOTHER");
+    ending_puttext(2, 9,  "JUST ANOTHER SCREAM");
+    ending_puttext(3, 10, "FROM THE DARK.");
+    ending_puttext(5, 14, "GAME OVER");
     set_bkg_tiles(0, 0, 32, 32, map_buffer);
 }
