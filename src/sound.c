@@ -37,6 +37,9 @@ static volatile uint8_t finale_music_step = 0;
 #define N_A2 857
 #define N_AS2 907
 #define N_B2 961
+#define N_D2 44  // D2 same freq as C2 region (low)
+#define N_DS3 1103  // D#3
+#define N_DS4 1575  // D#4
 #define N_C3 1046
 #define N_CS3 1103
 #define N_D3 1155
@@ -184,38 +187,54 @@ const uint16_t eerie_reg_vals[] = {
     1369, 1497, 1589, 1709, 1733, 1709, 1589, 1497
 };
 
-const uint16_t title_melody[112] = {
-    N_D3, R, N_F3, R, N_A3, R, N_F3, R,
-    N_A3, N_F3, N_D3, R, N_C3, R, N_D3, R,
-    N_AS3, R, N_D4, N_F4, R, N_D4, N_AS3, R,
-    N_F3, R, N_A3, N_C4, R, N_A3, N_F3, R,
-    N_C3, R, N_E3, N_G3, R, N_E3, N_C3, R,
-    N_D3, R, N_F3, N_A3, R, N_A3, N_F3, R,
-    N_A3, R, N_CS4, N_E4, R, N_E4, N_CS4, R,
-    N_D4, N_F4, N_A4, R, N_C5, N_A4, N_F4, R,
-    N_G3, R, N_AS3, N_D4, R, N_AS3, N_G3, R,
-    N_A3, R, N_E4, N_CS4, R, N_A3, N_E4, R,
-    N_D4, N_F4, N_A4, N_F4, R, N_D4, N_C4, R,
-    N_AS3, N_A3, R, N_G3, R, N_F3, R, N_E3,
-    N_D3, R, N_C3, R, N_AS2, R, N_A2, R,
-    N_D3, R, R, R, R, R, R, R
+// === TITLE MUSIC: inseguimento (veloce, d'azione, 8 frame/nota) ===
+// Arpeggi rapidi in salita, melodia di tensione, pattern di caccia.
+// Tonalita': D minore (orrorifica). 128 step, loop.
+const uint16_t title_melody[128] = {
+    // Frase 1: arpeggio ascendente D-F-A-D (ripetuto, crescente)
+    N_D4, N_F4, N_A4, N_D5, N_A4, N_F4, N_D4, N_F4,
+    N_D4, N_F4, N_A4, N_D5, N_A4, N_F4, N_D4, N_A4,
+    // Frase 2: arpeggio C-E-G-C (sotto dominante)
+    N_C4, N_E4, N_G4, N_C5, N_G4, N_E4, N_C4, N_E4,
+    N_C4, N_E4, N_G4, N_C5, N_G4, N_E4, N_C4, N_G4,
+    // Frase 3: arpeggio Bb-D-F-Bb (sotto sottodominante)
+    N_AS3, N_D4, N_F4, N_AS4, N_F4, N_D4, N_AS3, N_D4,
+    N_AS3, N_D4, N_F4, N_AS4, N_F4, N_D4, N_AS3, N_F4,
+    // Frase 4: melodia di tensione (note lunghe tra gli arpeggi)
+    N_A4, R, N_G4, N_F4, N_E4, N_F4, N_G4, N_A4,
+    N_AS4, N_A4, N_G4, N_F4, N_E4, N_D4, N_C4, R,
+    // Frase 5: salita cromatica verso il climax
+    N_D4, N_DS4, N_E4, N_F4, N_FS4, N_G4, N_GS4, N_A4,
+    N_AS4, N_B4, N_C5, N_CS5, N_D5, N_D5, N_D5, R,
+    // Frase 6: climax — accordo di D5 ripetuto (colpo di caccia)
+    N_D5, N_A4, N_F4, N_D5, N_A4, N_F4, N_D5, N_A4,
+    N_D5, N_A4, N_F4, N_D5, N_A4, N_F4, N_D5, R,
+    // Frase 7: discesa drammatica
+    N_D5, N_C5, N_AS4, N_A4, N_G4, N_F4, N_E4, N_D4,
+    N_C4, N_D4, N_E4, N_F4, N_G4, N_A4, N_AS4, N_C5,
+    // Frase 8: cadenza — arresto improvviso (il mostro ti raggiunge)
+    N_D5, R, N_A4, R, N_F4, R, N_D4, R,
+    N_D4, N_D4, N_D4, N_D4, R, R, R, R
 };
 
-const uint16_t title_bass[112] = {
-    N_D3, R, R, R, N_D3, R, R, R,
-    N_A2, R, R, R, N_A2, R, R, R,
-    N_AS2, R, R, R, N_AS2, R, R, R,
-    N_F2, R, R, R, N_F2, R, R, R,
-    N_C3, R, R, R, N_C3, R, R, R,
-    N_D3, R, R, R, N_D3, R, R, R,
-    N_A2, R, R, R, N_E3, R, R, R,
-    N_D3, R, R, R, N_A2, R, R, R,
-    N_G2, R, R, R, N_D3, R, R, R,
-    N_A2, R, R, R, N_E3, R, R, R,
-    N_D3, R, R, R, N_A2, R, R, R,
-    N_AS2, R, N_A2, R, N_G2, R, N_F2, R,
-    N_D3, R, N_C3, R, N_AS2, R, N_A2, R,
-    N_D3, R, R, R, R, R, R, R
+const uint16_t title_bass[128] = {
+    // Ottavi pulsanti (basso di inseguimento) — D, A, Bb, F
+    N_D3, N_D3, N_D3, N_D3, N_D3, N_D3, N_D3, N_D3,
+    N_A2, N_A2, N_A2, N_A2, N_A2, N_A2, N_A2, N_A2,
+    N_AS2, N_AS2, N_AS2, N_AS2, N_AS2, N_AS2, N_AS2, N_AS2,
+    N_F2, N_F2, N_F2, N_F2, N_F2, N_F2, N_F2, N_F2,
+    // Salita cromatica del basso (tensione crescente)
+    N_D3, N_DS3, N_E3, N_F3, N_FS3, N_G3, N_GS3, N_A3,
+    N_AS3, N_B3, N_C4, N_CS4, N_D4, N_D4, N_D4, N_D4,
+    // Climax: D pedal (pedale di D, il mostro e' qui)
+    N_D3, N_D3, N_D3, N_D3, N_D3, N_D3, N_D3, N_D3,
+    N_D3, N_D3, N_D3, N_D3, N_D3, N_D3, N_D3, N_D3,
+    // Caduta: basso discendente
+    N_D3, N_C3, N_AS2, N_A2, N_G2, N_F2, N_E2, N_C2,
+    N_C2, N_C2, N_C2, N_C2, N_C2, N_C2, N_C2, N_C2,
+    // Arresto
+    N_C2, R, N_C2, R, N_C2, R, N_C2, R,
+    N_C2, N_C2, N_C2, N_C2, R, R, R, R
 };
 
 
@@ -398,7 +417,7 @@ void play_victory_step(uint8_t step) {
 void play_music_tick(void) {
     if (app_state == 0) { // TITLE SCREEN
         title_music_timer++;
-        if (title_music_timer >= 30) { // 30 frames per note (somber)
+        if (title_music_timer >= 8) { // 8 frames per note (veloce, azione)
             title_music_timer = 0;
             uint8_t step = title_music_step;
             // CH1: melody (sustained, haunting envelope)
@@ -406,7 +425,7 @@ void play_music_tick(void) {
             if (n != R) {
                 NR10_REG = 0;
                 NR11_REG = 0x80;
-                NR12_REG = 0x87; // vol 8, fade up, period 7 (sustained)
+                NR12_REG = 0x92; // vol 9, fade down, period 2 (staccato, urgente)
                 NR13_REG = n & 0xFF;
                 NR14_REG = (n >> 8) | 0x80;
             }
@@ -414,19 +433,27 @@ void play_music_tick(void) {
             uint16_t b = title_bass[step];
             if (b != R) {
                 NR21_REG = 0x80;
-                NR22_REG = 0xA3; // vol 10, fade down, period 3 (deep plucked)
+                NR22_REG = 0x91; // vol 9, fade down, period 1 (sharp, pulsing)
                 NR23_REG = b & 0xFF;
                 NR24_REG = (b >> 8) | 0x80;
             }
             // CH4: sparse toll at chord changes (every 8 steps) for atmosphere
-            if (step % 8 == 0) {
+            // Percussioni veloci: kick sui downbeat, hi-hat sugli upbeat
+            if (step % 4 == 0) {
+                // Kick drum (basso, corto)
                 NR41_REG = 0x01;
-                NR42_REG = 0x82; // soft, slow fade
-                NR43_REG = 0x70; // deep low toll
+                NR42_REG = 0xC3; // vol 12, fade down fast
+                NR43_REG = 0x73; // low freq
+                NR44_REG = 0x80;
+            } else if (step % 2 == 0) {
+                // Hi-hat (acuto, corto)
+                NR41_REG = 0x01;
+                NR42_REG = 0x41; // vol 4, fade down very fast
+                NR43_REG = 0x20; // high freq noise
                 NR44_REG = 0x80;
             }
             title_music_step++;
-            if (title_music_step >= 112) title_music_step = 0;
+            if (title_music_step >= 128) title_music_step = 0;
         }
         return;
     }
