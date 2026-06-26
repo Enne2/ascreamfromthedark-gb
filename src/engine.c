@@ -75,6 +75,7 @@ void engine_init(void) {
     hint_displayed = 0;
     // Mostra le istruzioni SOLO la prima volta che si gioca il livello 1
     if (level == 1 && !hint_shown_once) hint_active = 1;
+    descend_offset = 0; // reset animazione discesa
     
     // Carica il font testuale di sistema (IBM)
     font_init();
@@ -256,6 +257,11 @@ void engine_update(uint8_t keys, uint8_t prev_keys) {
     if (game_over) {
         if (game_over_timer > 0) {
             game_over_timer--;
+            // Animazione di discesa nella botola (solo per vittoria/finale)
+            if ((game_over == 2 || game_over == 3) && descend_offset < 12) {
+                descend_offset++;
+                update_player_sprite(); // aggiorna lo sprite che scende
+            }
             // Quando scade il timer drammatico...
             if (game_over_timer == 0) {
                 if (game_over == 1) {

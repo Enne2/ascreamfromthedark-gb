@@ -85,6 +85,11 @@ extern volatile uint8_t hint_displayed;
 // (evita che riappaiano ripetendo il livello 1)
 extern volatile uint8_t hint_shown_once;
 
+// --- Animazione discesa botola ---
+// descend_offset: 0 = normale, >0 = il giocatore sta scendendo nella botola
+// (aumenta di 1 ogni frame; a 32 il giocatore e' sparito del tutto)
+extern volatile uint8_t descend_offset;
+
 // --- Credits Screen ---
 // credits_active: 1 = mostra la schermata crediti (SELECT nel menu titolo)
 extern volatile uint8_t credits_active;

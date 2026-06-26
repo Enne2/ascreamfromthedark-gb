@@ -296,7 +296,12 @@ void update_player_sprite(void) {
         y_offset = (move_progress * (16 - move_progress)) >> 2;
     }
     
-    // move_metasprite è fornito da png2asset e posiziona multipli sprite hardware insieme
-    // Il giocatore è sempre fisso al centro dello schermo (88, 88). È il mondo (sfondo) a muoversi.
+    // Animazione discesa botola: il giocatore scende di pochi pixel
+    if (descend_offset > 0) {
+        y_offset = (uint8_t)(-(int8_t)(descend_offset >> 1)); // discesa graduale
+    }
+    
+    // move_metasprite e' fornito da png2asset e posiziona multipli sprite hardware insieme
+    // Il giocatore e' sempre fisso al centro dello schermo (88, 88). E' il mondo (sfondo) a muoversi.
     move_metasprite(player_metasprites[player_dir * 2 + frame_offset], 0, 0, 88, 88 - y_offset);
 }

@@ -48,5 +48,6 @@ uint8_t enemy_cooldown[MAX_ENEMIES] = {0};
 volatile uint8_t hint_active = 0;
 volatile uint8_t hint_displayed = 0;
 volatile uint8_t hint_shown_once = 0;
+volatile uint8_t descend_offset = 0;
 volatile uint8_t credits_active = 0;
 volatile uint8_t intro_active = 0;

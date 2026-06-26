@@ -90,12 +90,11 @@ void update_player_movement(uint8_t keys, uint8_t prev_keys) {
             if (maze[player_ly][player_lx] == 2) {
                 // Livello 8 completato -> finale (gioco finito); altrimenti Going Deeper (lvl successivo).
                 game_over = (level >= 8) ? 3 : 2;
-                game_over_timer = 30; // Piccolo ritardo prima che la scena cambi
+                game_over_timer = 30; // Animazione di discesa (30 frame)
+                descend_offset = 1; // avvia l'animazione di discesa nella botola
                 update_stamina_display();
-                
-                // Effetto dissolvenza: ripulisce tutto lo schermo per mostrare la scritta VITTORIA su sfondo nero
-                memset(map_buffer, 0, sizeof(map_buffer));
-                set_bkg_tiles(0, 0, 32, 32, map_buffer);
+                // Lo schermo non viene pulito subito: l'animazione di discesa
+                // avviene durante i 30 frame di game_over_timer.
             }
         }
         return; // Interrompe qui se stiamo camminando
