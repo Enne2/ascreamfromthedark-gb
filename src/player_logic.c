@@ -159,32 +159,38 @@ void update_player_movement(uint8_t keys, uint8_t prev_keys) {
                 // c) Devi avere abbastanza stamina (>= 60)
                 if (maze[player_ly + move_ly][player_lx + move_lx] == 0 && (maze[land_ly][land_lx] == 1 || maze[land_ly][land_lx] == 2)) {
                     // Il salto costa 60 stamina. Se ne hai meno, puoi tentare comunque
-                    // ma rischi di cadere nel vuoto. La probabilita' di caduta e'
-                    // proporzionale a quanti punti ti mancano da 60.
-                    // (es: 30 stamina -> 50% caduta; 0 stamina -> 100% caduta)
+                    // ma rischi di cadere nel vuoto. Probabilita' proporzionale allo
+                    // stamina mancante: 0 sta = 0% caduta, 30 sta = 50%, 0 sta = 100%.
                     uint8_t fall_chance = 0;
                     if (stamina < 60) {
-                        // Probabilita' di caduta proporzionale allo stamina mancante.
-                        // Cast a uint16_t per evitare overflow (int e' 8-bit su GB).
                         fall_chance = (uint8_t)(((uint16_t)(60 - stamina) * 255) / 60);
                     }
-                    uint8_t roll = (uint8_t)rand();
-                    uint8_t will_fall = (roll < fall_chance);
                     
                     is_moving = 1;
                     is_jumping = 1;
                     move_progress = 0;
-                    // Consuma tutta la stamina disponibile (min 60 se possibile)
                     if (stamina >= 60) {
                         stamina -= 60;
                     } else {
                         stamina = 0;
                     }
                     
+                    // Tira il dado con DIV_REG (hardware, cambia ogni ciclo)
+                    uint8_t roll = DIV_REG;
+                    if (roll < fall_chance) {
+                        // CADE: atterra sulla cella intermedia (abisso) e cade
+                        fall_offset = 1;
+                        target_lx = player_lx + move_lx;
+                        target_ly = player_ly + move_ly;
+                    } else {
+                        // CE LA FA: atterra normalmente a distanza 2
+                        fall_offset = 0;
+                        target_lx = land_lx;
+                        target_ly = land_ly;
+                    }
+                    
                     start_lx = player_lx;
                     start_ly = player_ly;
-                    target_lx = will_fall ? (player_lx + move_lx) : land_lx;
-                    target_ly = will_fall ? (player_ly + move_ly) : land_ly;
                     
                     start_px = (start_lx - start_ly) * 16 + 96;
                     start_py = (start_lx + start_ly) * 8 + 16;
@@ -200,12 +206,7 @@ void update_player_movement(uint8_t keys, uint8_t prev_keys) {
                     
                     update_stamina_display();
                     update_player_sprite();
-                    
-                    // Se cade nel vuoto, attiva l'animazione di caduta
-                    if (will_fall) {
-                        fall_offset = 1;
-                        // Il giocatore cadra' nell'abisso: game_over dopo l'animazione
-                    }
+                    // fall_offset e' gia' stato impostato sopra (1 = cade, 0 = ok)
                     return;
                 }
             }
