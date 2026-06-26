@@ -164,7 +164,9 @@ void update_player_movement(uint8_t keys, uint8_t prev_keys) {
                     // (es: 30 stamina -> 50% caduta; 0 stamina -> 100% caduta)
                     uint8_t fall_chance = 0;
                     if (stamina < 60) {
-                        fall_chance = (uint8_t)(((60 - stamina) * 255) / 60);
+                        // Probabilita' di caduta proporzionale allo stamina mancante.
+                        // Cast a uint16_t per evitare overflow (int e' 8-bit su GB).
+                        fall_chance = (uint8_t)(((uint16_t)(60 - stamina) * 255) / 60);
                     }
                     uint8_t roll = (uint8_t)rand();
                     uint8_t will_fall = (roll < fall_chance);
