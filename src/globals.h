@@ -81,6 +81,9 @@ extern uint8_t enemy_cooldown[MAX_ENEMIES];
 // hint_displayed: 1 = la schermata e' gia' stata renderizzata questo frame.
 extern volatile uint8_t hint_active;
 extern volatile uint8_t hint_displayed;
+// hint_shown_once: 1 = le istruzioni sono gia' state mostrate una volta
+// (evita che riappaiano ripetendo il livello 1)
+extern volatile uint8_t hint_shown_once;
 
 // --- Credits Screen ---
 // credits_active: 1 = mostra la schermata crediti (SELECT nel menu titolo)

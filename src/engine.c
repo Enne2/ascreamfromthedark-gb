@@ -73,7 +73,8 @@ void engine_init(void) {
     // la ROM a 32KB e' piena e il linker potrebbe troncare la coda).
     hint_active = 0;
     hint_displayed = 0;
-    if (level == 1) hint_active = 1;
+    // Mostra le istruzioni SOLO la prima volta che si gioca il livello 1
+    if (level == 1 && !hint_shown_once) hint_active = 1;
     
     // Carica il font testuale di sistema (IBM)
     font_init();
@@ -212,6 +213,7 @@ void engine_update(uint8_t keys, uint8_t prev_keys) {
     if (hint_active) {
         if (!hint_displayed) {
             hint_displayed = 1;
+            hint_shown_once = 1; // segna che le istruzioni sono state mostrate
             show_instructions();
         }
         // B chiude la schermata e riprende il gioco
