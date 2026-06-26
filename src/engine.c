@@ -264,7 +264,7 @@ void engine_update(uint8_t keys, uint8_t prev_keys) {
                 update_player_sprite(); // aggiorna lo sprite che scende
             }
             // Animazione di caduta nel vuoto (sconfitta per salto fallito)
-            if (game_over == 1 && fall_offset > 0 && fall_offset < 32) {
+            if (game_over == 1 && fall_offset > 0 && fall_offset < 8) {
                 fall_offset++;
                 update_player_sprite(); // il giocatore cade
             }
