@@ -9,7 +9,7 @@ SCRIPTS_DIR = scripts
 BUILD_DIR = build
 
 # C source files
-SRCS = $(SRC_DIR)/main.c $(SRC_DIR)/engine.c $(SRC_DIR)/globals.c $(SRC_DIR)/maze.c $(SRC_DIR)/sound.c $(SRC_DIR)/render.c $(SRC_DIR)/player_logic.c $(SRC_DIR)/enemy_logic.c $(SRC_DIR)/tiles.c $(SRC_DIR)/player.c $(SRC_DIR)/enemy.c $(SRC_DIR)/gameover.c $(SRC_DIR)/stamina.c $(SRC_DIR)/level.c $(SRC_DIR)/title_bg.c $(SRC_DIR)/screens/screens.c $(SRC_DIR)/screens/instructions.c $(SRC_DIR)/screens/death.c $(SRC_DIR)/screens/going_deeper.c $(SRC_DIR)/screens/finale.c $(SRC_DIR)/screens/credits.c
+SRCS = $(SRC_DIR)/main.c $(SRC_DIR)/engine.c $(SRC_DIR)/globals.c $(SRC_DIR)/maze.c $(SRC_DIR)/sound.c $(SRC_DIR)/render.c $(SRC_DIR)/player_logic.c $(SRC_DIR)/enemy_logic.c $(SRC_DIR)/tiles.c $(SRC_DIR)/player.c $(SRC_DIR)/enemy.c $(SRC_DIR)/gameover.c $(SRC_DIR)/stamina.c $(SRC_DIR)/level.c $(SRC_DIR)/title_bg.c $(SRC_DIR)/screens/screens.c $(SRC_DIR)/screens/instructions.c $(SRC_DIR)/screens/death.c $(SRC_DIR)/screens/going_deeper.c $(SRC_DIR)/screens/finale.c $(SRC_DIR)/screens/credits.c $(SRC_DIR)/screens/intro.c
 
 all: $(BUILD_DIR)/hello_iso.gb $(BUILD_DIR)/test_gameover.gb $(BUILD_DIR)/test_finale.gb
 
@@ -52,4 +52,4 @@ clean:
 	rm -f $(SRC_DIR)/gameover.c $(SRC_DIR)/gameover.h
 	rm -f $(SRC_DIR)/stamina.c $(SRC_DIR)/stamina.h
 	rm -f $(SRC_DIR)/level.c $(SRC_DIR)/level.h
-	rm -f $(SRC_DIR)/title_bg.c $(SRC_DIR)/screens/screens.c $(SRC_DIR)/screens/instructions.c $(SRC_DIR)/screens/death.c $(SRC_DIR)/screens/going_deeper.c $(SRC_DIR)/screens/finale.c $(SRC_DIR)/screens/credits.c $(SRC_DIR)/title_bg.h
+	rm -f $(SRC_DIR)/title_bg.c $(SRC_DIR)/screens/screens.c $(SRC_DIR)/screens/instructions.c $(SRC_DIR)/screens/death.c $(SRC_DIR)/screens/going_deeper.c $(SRC_DIR)/screens/finale.c $(SRC_DIR)/screens/credits.c $(SRC_DIR)/screens/intro.c $(SRC_DIR)/title_bg.h

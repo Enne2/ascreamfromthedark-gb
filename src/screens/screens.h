@@ -29,6 +29,9 @@ void show_finale(void);
 // Schermata dei crediti (SELECT nel menu titolo)
 void show_credits(void);
 
+// Schermata di introduzione alla storia (dopo START, prima del gioco)
+void show_intro(void);
+
 // Helper condivisi (definiti in screens.c)
 void ending_puttext(uint8_t col, uint8_t row, const char *s);
 void ending_putdigit(uint8_t col, uint8_t row, uint8_t digit);

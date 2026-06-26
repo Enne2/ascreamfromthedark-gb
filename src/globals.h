@@ -86,4 +86,8 @@ extern volatile uint8_t hint_displayed;
 // credits_active: 1 = mostra la schermata crediti (SELECT nel menu titolo)
 extern volatile uint8_t credits_active;
 
+// --- Intro Screen ---
+// intro_active: 1 = mostra l'introduzione alla storia (dopo START, prima del gioco)
+extern volatile uint8_t intro_active;
+
 #endif
