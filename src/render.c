@@ -300,6 +300,10 @@ void update_player_sprite(void) {
     if (descend_offset > 0) {
         y_offset = (uint8_t)(-(int8_t)(descend_offset >> 1)); // discesa graduale
     }
+    // Animazione caduta nel vuoto: il giocatore cade velocemente verso il basso
+    if (fall_offset > 0) {
+        y_offset = (uint8_t)(-(int8_t)(fall_offset << 1)); // caduta rapida (2x pixel)
+    }
     
     // move_metasprite e' fornito da png2asset e posiziona multipli sprite hardware insieme
     // Il giocatore e' sempre fisso al centro dello schermo (88, 88). E' il mondo (sfondo) a muoversi.

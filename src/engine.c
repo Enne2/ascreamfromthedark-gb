@@ -76,6 +76,7 @@ void engine_init(void) {
     // Mostra le istruzioni SOLO la prima volta che si gioca il livello 1
     if (level == 1 && !hint_shown_once) hint_active = 1;
     descend_offset = 0; // reset animazione discesa
+    fall_offset = 0; // reset animazione caduta
     
     // Carica il font testuale di sistema (IBM)
     font_init();
@@ -261,6 +262,11 @@ void engine_update(uint8_t keys, uint8_t prev_keys) {
             if ((game_over == 2 || game_over == 3) && descend_offset < 12) {
                 descend_offset++;
                 update_player_sprite(); // aggiorna lo sprite che scende
+            }
+            // Animazione di caduta nel vuoto (sconfitta per salto fallito)
+            if (game_over == 1 && fall_offset > 0 && fall_offset < 32) {
+                fall_offset++;
+                update_player_sprite(); // il giocatore cade
             }
             // Quando scade il timer drammatico...
             if (game_over_timer == 0) {

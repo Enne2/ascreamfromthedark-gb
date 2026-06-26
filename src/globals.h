@@ -90,6 +90,11 @@ extern volatile uint8_t hint_shown_once;
 // (aumenta di 1 ogni frame; a 32 il giocatore e' sparito del tutto)
 extern volatile uint8_t descend_offset;
 
+// --- Animazione caduta nel vuoto ---
+// fall_offset: 0 = normale, >0 = il giocatore sta cadendo nell'abisso
+// (aumenta di 1 ogni frame; il giocatore scende e scompare)
+extern volatile uint8_t fall_offset;
+
 // --- Credits Screen ---
 // credits_active: 1 = mostra la schermata crediti (SELECT nel menu titolo)
 extern volatile uint8_t credits_active;

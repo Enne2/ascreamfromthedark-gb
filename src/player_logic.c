@@ -76,6 +76,13 @@ void update_player_movement(uint8_t keys, uint8_t prev_keys) {
             player_lx = target_lx;
             player_ly = target_ly;
             
+            // Se stava cadendo nel vuoto, game over con animazione
+            if (fall_offset > 0) {
+                game_over = 1; // sconfitta
+                game_over_timer = 30; // timer per animazione di caduta
+                return;
+            }
+            
             // Snap matematico alla destinazione per prevenire derive dovute ad arrotondamenti
             int16_t final_px = (player_lx - player_ly) * 16 + 96;
             int16_t final_py = (player_lx + player_ly) * 8 + 16;
@@ -150,16 +157,32 @@ void update_player_movement(uint8_t keys, uint8_t prev_keys) {
                 // a) La cella intermedia DEVE essere un muro (maze == 0)
                 // b) La cella di arrivo DEVE essere un pavimento o vittoria (maze == 1 o 2)
                 // c) Devi avere abbastanza stamina (>= 60)
-                if (maze[player_ly + move_ly][player_lx + move_lx] == 0 && (maze[land_ly][land_lx] == 1 || maze[land_ly][land_lx] == 2) && stamina >= 60) {
+                if (maze[player_ly + move_ly][player_lx + move_lx] == 0 && (maze[land_ly][land_lx] == 1 || maze[land_ly][land_lx] == 2)) {
+                    // Il salto costa 60 stamina. Se ne hai meno, puoi tentare comunque
+                    // ma rischi di cadere nel vuoto. La probabilita' di caduta e'
+                    // proporzionale a quanti punti ti mancano da 60.
+                    // (es: 30 stamina -> 50% caduta; 0 stamina -> 100% caduta)
+                    uint8_t fall_chance = 0;
+                    if (stamina < 60) {
+                        fall_chance = (uint8_t)(((60 - stamina) * 255) / 60);
+                    }
+                    uint8_t roll = (uint8_t)rand();
+                    uint8_t will_fall = (roll < fall_chance);
+                    
                     is_moving = 1;
-                    is_jumping = 1; // Questo attiva l'arco parabolico in render.c
+                    is_jumping = 1;
                     move_progress = 0;
-                    stamina -= 60;
+                    // Consuma tutta la stamina disponibile (min 60 se possibile)
+                    if (stamina >= 60) {
+                        stamina -= 60;
+                    } else {
+                        stamina = 0;
+                    }
                     
                     start_lx = player_lx;
                     start_ly = player_ly;
-                    target_lx = land_lx;
-                    target_ly = land_ly;
+                    target_lx = will_fall ? (player_lx + move_lx) : land_lx;
+                    target_ly = will_fall ? (player_ly + move_ly) : land_ly;
                     
                     start_px = (start_lx - start_ly) * 16 + 96;
                     start_py = (start_lx + start_ly) * 8 + 16;
@@ -175,6 +198,12 @@ void update_player_movement(uint8_t keys, uint8_t prev_keys) {
                     
                     update_stamina_display();
                     update_player_sprite();
+                    
+                    // Se cade nel vuoto, attiva l'animazione di caduta
+                    if (will_fall) {
+                        fall_offset = 1;
+                        // Il giocatore cadra' nell'abisso: game_over dopo l'animazione
+                    }
                     return;
                 }
             }
