@@ -43,9 +43,9 @@
             background-color: #000;
             image-rendering: pixelated;
             image-rendering: crisp-edges;
-            width: 320px;
-            height: 288px;
-            max-width: 100%;
+            width: min(520px, 100%);
+            height: auto;
+            aspect-ratio: 10 / 9;
             border: 4px solid #2a2a2a;
             border-radius: 4px;
             box-shadow: 0 0 30px rgba(196, 30, 58, 0.3),
@@ -79,16 +79,22 @@
            ============================================ */
         #mobile-controls {
             display: none;
-            margin-top: 18px;
-            width: 100%;
-            max-width: 480px;
+            margin-top: 4vh;
+            width: min(540px, 100%);
             user-select: none;
             -webkit-user-select: none;
             touch-action: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 2.5vh;
         }
         @media (max-width: 700px), (pointer: coarse) {
-            #mobile-controls { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 0 8px; }
+            #mobile-controls { display: flex; }
             .controls { display: none; }
+            body { padding: 14px; justify-content: flex-start; }
+            h1 { font-size: 1.25em; margin-bottom: 4px; }
+            h2 { display: none; }
+            .footer { font-size: 10px; margin-top: 3vh; }
         }
 
         /* Base touch button */
@@ -96,10 +102,10 @@
             background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%);
             color: #c41e3a;
             border: 2px solid #3a3a3a;
-            border-radius: 8px;
+            border-radius: 12px;
             font-family: 'Courier New', monospace;
             font-weight: bold;
-            font-size: 18px;
+            font-size: clamp(16px, 5vw, 22px);
             touch-action: none;
             user-select: none;
             -webkit-user-select: none;
@@ -108,29 +114,40 @@
             justify-content: center;
             cursor: pointer;
             transition: transform 0.05s, background 0.05s, border-color 0.05s, box-shadow 0.05s;
-            box-shadow: 0 3px 0 #000, inset 0 1px 0 rgba(255,255,255,0.05);
+            box-shadow: 0 4px 0 #000, inset 0 1px 0 rgba(255,255,255,0.05);
             min-width: 0;
             min-height: 0;
         }
         .tbtn.pressed,
-        .tbtn:active,
-        .tbtn.active {
+        .tbtn:active {
             background: linear-gradient(180deg, #c41e3a 0%, #8b0000 100%);
             color: #fff;
             border-color: #c41e3a;
-            transform: translateY(2px);
+            transform: translateY(3px);
             box-shadow: 0 1px 0 #000, inset 0 1px 0 rgba(255,255,255,0.2);
         }
 
-        /* D-pad: cross layout, larger buttons for thumbs */
+        /* Row that holds dpad + A/B side-by-side on wider phones, stacked on tiny screens */
+        .ctrl-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            width: 100%;
+            gap: 16px;
+            padding: 0 12px;
+        }
+
+        /* D-pad: cross layout, thumb-sized */
         .dpad {
             display: grid;
-            grid-template-columns: 60px 60px 60px;
-            grid-template-rows: 60px 60px 60px;
-            gap: 4px;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: 1fr 1fr 1fr;
+            gap: 2px;
+            width: clamp(140px, 38vw, 190px);
+            height: clamp(140px, 38vw, 190px);
         }
         .dpad .tbtn {
-            border-radius: 50% / 30%;
+            border-radius: 8px;
         }
         .d-up    { grid-column: 2; grid-row: 1; }
         .d-left  { grid-column: 1; grid-row: 2; }
@@ -146,34 +163,54 @@
         /* A/B action buttons */
         .actions {
             display: flex;
-            gap: 12px;
-            align-items: center;
+            gap: clamp(8px, 3vw, 16px);
+            align-items: flex-end;
         }
         .actions .tbtn {
-            width: 64px;
-            height: 64px;
+            width: clamp(56px, 17vw, 76px);
+            height: clamp(56px, 17vw, 76px);
             border-radius: 50%;
-            font-size: 22px;
+            font-size: clamp(18px, 6vw, 26px);
         }
-        .btn-b { transform: rotate(-15deg); }
-        .btn-b.pressed, .btn-b:active { transform: rotate(-15deg) translateY(2px); }
-        .btn-a { transform: rotate(15deg); }
-        .btn-a.pressed, .btn-a:active { transform: rotate(15deg) translateY(2px); }
+        .btn-b { transform: rotate(-12deg); }
+        .btn-b.pressed, .btn-b:active { transform: rotate(-12deg) translateY(3px); }
+        .btn-a { transform: rotate(12deg); }
+        .btn-a.pressed, .btn-a:active { transform: rotate(12deg) translateY(3px); }
 
-        /* Start / Select pill buttons (top center) */
+        /* Start / Select pill buttons */
         .sys {
             display: flex;
-            flex-direction: column;
-            gap: 6px;
+            gap: clamp(10px, 4vw, 24px);
             align-items: center;
         }
         .sys .tbtn {
             min-width: 78px;
-            height: 28px;
-            border-radius: 14px;
-            font-size: 11px;
+            width: clamp(78px, 22vw, 110px);
+            height: clamp(30px, 8vw, 40px);
+            border-radius: 20px;
+            font-size: clamp(10px, 3vw, 13px);
             letter-spacing: 1px;
-            padding: 0 14px;
+            padding: 0 12px;
+        }
+
+        /* Tiny screens: stack A/B below dpad if side-by-side doesn't fit */
+        @media (max-width: 360px) {
+            .ctrl-row { flex-direction: column; align-items: center; gap: 18px; }
+        }
+
+        /* Landscape phone: single row with controls on sides */
+        @media (orientation: landscape) and (max-height: 500px) {
+            body { justify-content: center; padding: 8px; }
+            h1 { font-size: 1em; }
+            #game-container { flex-direction: row; gap: 16px; align-items: center; }
+            canvas { width: min(55vh, 60vw); height: auto; }
+            #mobile-controls { flex-direction: row; width: auto; gap: 18px; margin-top: 0; }
+            .ctrl-row { flex-direction: row; width: auto; padding: 0; gap: 10px; }
+            .dpad { width: 120px; height: 120px; }
+            .actions .tbtn { width: 52px; height: 52px; }
+            .sys { flex-direction: column; }
+            .btn-fs { display: none; }
+            .footer { display: none; }
         }
 
         /* Fullscreen & helpers */
@@ -221,13 +258,6 @@
         .footer a { color: #c41e3a; text-decoration: none; }
         .footer a:hover { text-decoration: underline; }
 
-        /* Landscape: compact controls to leave room for screen */
-        @media (orientation: landscape) and (max-height: 500px) {
-            h1 { font-size: 1.1em; margin-bottom: 2px; }
-            h2 { display: none; }
-            canvas { height: 70vh; width: auto; }
-            #mobile-controls { margin-top: 8px; }
-        }
     </style>
 </head>
 <body>
@@ -241,25 +271,26 @@
         <button class="btn-fs" id="btn-fullscreen">⛶ Schermo Intero</button>
 
         <div id="mobile-controls">
-            <!-- D-pad (sinistra) -->
-            <div class="dpad" aria-label="Directional pad">
-                <button class="tbtn d-up"    data-key="ArrowUp"    aria-label="Su">▲</button>
-                <button class="tbtn d-left"  data-key="ArrowLeft"  aria-label="Sinistra">◀</button>
-                <div class="d-center"></div>
-                <button class="tbtn d-right" data-key="ArrowRight" aria-label="Destra">▶</button>
-                <button class="tbtn d-down"  data-key="ArrowDown"  aria-label="Giù">▼</button>
-            </div>
-
-            <!-- Start / Select (centro) -->
+            <!-- Start / Select (sopra) -->
             <div class="sys" aria-label="System buttons">
                 <button class="tbtn" data-key="Enter"  id="btn-start"  aria-label="Start">START</button>
                 <button class="tbtn" data-key="Shift"  id="btn-select" aria-label="Select">SELECT</button>
             </div>
 
-            <!-- A / B (destra, in stile GB inclinati) -->
-            <div class="actions" aria-label="Action buttons">
-                <button class="tbtn btn-b" data-key="Backspace" id="btn-b" aria-label="B (corsa)">B</button>
-                <button class="tbtn btn-a" data-key="z"          id="btn-a" aria-label="A (salto)">A</button>
+            <!-- D-pad + A/B su una riga -->
+            <div class="ctrl-row">
+                <div class="dpad" aria-label="Directional pad">
+                    <button class="tbtn d-up"    data-key="ArrowUp"    aria-label="Su">▲</button>
+                    <button class="tbtn d-left"  data-key="ArrowLeft"  aria-label="Sinistra">◀</button>
+                    <div class="d-center"></div>
+                    <button class="tbtn d-right" data-key="ArrowRight" aria-label="Destra">▶</button>
+                    <button class="tbtn d-down"  data-key="ArrowDown"  aria-label="Giù">▼</button>
+                </div>
+
+                <div class="actions" aria-label="Action buttons">
+                    <button class="tbtn btn-b" data-key="Backspace" id="btn-b" aria-label="B (corsa)">B</button>
+                    <button class="tbtn btn-a" data-key="z"          id="btn-a" aria-label="A (salto)">A</button>
+                </div>
             </div>
         </div>
     </div>
