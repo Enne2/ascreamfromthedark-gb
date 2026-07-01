@@ -4,6 +4,12 @@
   <img src="assets/title_bg.png" alt="Title screen" width="320">
 </p>
 
+<p align="center">
+  <img src="assets/hello_iso_gb.png" alt="Early dev screenshot" width="320">
+</p>
+
+*Schermata di sviluppo iniziale (pixel-art isometrica, 160×144).*
+
 Un survival-horror procedurale in prospettiva isometrica per Game Boy (DMG/CGB), scritto in C con **GBDK-2020**. Sei imprigionato in un labirinto generato casualmente, illuminato solo da un ristretto quadrato di visibilità. Dei **fantasmi** si nascondono nel buio e ti braccano. L'unica via di fuga è una **botola** posta lontano dalla partenza: raggiungerla significa "sprofondare più giù" (*Going Deeper*) e affrontare un livello più grande, con più nemici e meno visibilità.
 
 ---
@@ -40,8 +46,6 @@ Crediti visibili anche nel gioco: schermata **SELECT** dal menu titolo.
 - **Audio procedurale**: 4 canali APU via VBL interrupt. Title (112 note, 3 canali), gameplay (96), gameover (128), schermata conclusiva (192, loop).
 - **Schermate**: title con sfondo 2-bit, death con `claimed.png`, Going Deeper testuale, schermata conclusiva con font IBM.
 - **Test headless**: PyBoy + OpenCV + ROM di test isolate.
-
-> 📼 *Screenshot di sviluppo iniziale (`assets/hello_iso_gb.png`, 160×144) — dà un'idea della grafica pixel-art anche se ormai obsoleto rispetto alla versione finale.*
 
 ### Soundtrack
 
