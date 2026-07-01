@@ -14,16 +14,6 @@ Un survival-horror procedurale in prospettiva isometrica per Game Boy (DMG/CGB),
 
 Crediti visibili anche nel gioco: schermata **SELECT** dal menu titolo.
 
-## Release
-
-| Campo | Valore |
-|---|---|
-| Versione | `a8a6a32` |
-| Messaggio | Aggiungi suono di caduta nel vuoto |
-| Data | 2026-06-26 |
-| ROM | `build/AScreamFromTheDark.gb` (32 KB) |
-| Stack | GBDK-2020 · SDCC · SM83 |
-
 ---
 
 ## Caratteristiche
