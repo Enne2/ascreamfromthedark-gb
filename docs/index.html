@@ -252,14 +252,14 @@
 
             <!-- Start / Select (centro) -->
             <div class="sys" aria-label="System buttons">
-                <button class="tbtn" data-key="Enter" id="btn-start" aria-label="Start">START</button>
-                <button class="tbtn" data-key=" "    id="btn-select" aria-label="Select">SELECT</button>
+                <button class="tbtn" data-key="Enter"  id="btn-start"  aria-label="Start">START</button>
+                <button class="tbtn" data-key="Shift"  id="btn-select" aria-label="Select">SELECT</button>
             </div>
 
             <!-- A / B (destra, in stile GB inclinati) -->
             <div class="actions" aria-label="Action buttons">
-                <button class="tbtn btn-b" data-key="x" id="btn-b" aria-label="B (corsa)">B</button>
-                <button class="tbtn btn-a" data-key="z" id="btn-a" aria-label="A (salto)">A</button>
+                <button class="tbtn btn-b" data-key="Backspace" id="btn-b" aria-label="B (corsa)">B</button>
+                <button class="tbtn btn-a" data-key="z"          id="btn-a" aria-label="A (salto)">A</button>
             </div>
         </div>
     </div>
@@ -268,9 +268,9 @@
         <strong>Comandi Tastiera:</strong>
         <span class="key">↑↓←→</span> muovi ·
         <span class="key">Z</span> A (salto) ·
-        <span class="key">X</span> B (corsa) ·
+        <span class="key">Backspace</span> B (corsa) ·
         <span class="key">Enter</span> Start ·
-        <span class="key">Spazio</span> Select
+        <span class="key">Shift</span> Select
     </div>
 
     <div class="footer">
@@ -310,24 +310,29 @@
         const KEY_CODE = {
             'ArrowUp':'ArrowUp','ArrowDown':'ArrowDown','ArrowLeft':'ArrowLeft','ArrowRight':'ArrowRight',
             'z':'KeyZ','Z':'KeyZ',
-            'x':'KeyX','X':'KeyX',
+            'Backspace':'Backspace',
             'Enter':'Enter','enter':'Enter',
-            ' ':'Space'
+            'Shift':'ShiftLeft','Tab':'Tab'
         };
         const KEY_KEY = {
             'ArrowUp':'ArrowUp','ArrowDown':'ArrowDown','ArrowLeft':'ArrowLeft','ArrowRight':'ArrowRight',
             'z':'z','Z':'z',
-            'x':'x','X':'x',
+            'Backspace':'Backspace',
             'Enter':'Enter','enter':'Enter',
-            ' ':' '
+            'Shift':'Shift','Tab':'Tab'
         };
-        // keyCode legacy (WasmBoy controlla anche questo in alcuni browser)
+        // keyCode legacy — WasmBoy controlla questo per mappare i tasti GB.
+        // Mappature WasmBoy reali (dal codice del bundle):
+        //   A      = Z (90)
+        //   B      = Backspace (8), Esc (27), apostrofo (222)
+        //   Start  = Enter (13), Space (32)
+        //   Select = Shift (16), Tab (9), backslash (220)
         const KEY_KEYCODE = {
             'ArrowUp':38,'ArrowDown':40,'ArrowLeft':37,'ArrowRight':39,
             'z':90,'Z':90,
-            'x':88,'X':88,
+            'Backspace':8,
             'Enter':13,'enter':13,
-            ' ':32
+            'Shift':16,'Tab':9
         };
 
         function dispatchKey(type, dataKey) {
@@ -378,7 +383,7 @@
 
         // Prevent default for arrow keys (avoid page scroll on Space/Arrows)
         window.addEventListener('keydown', e => {
-            if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
+            if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' ','Backspace','Tab'].includes(e.key)) e.preventDefault();
         }, { passive: false });
 
         /* Fullscreen toggle */
