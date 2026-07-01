@@ -2,36 +2,41 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>A Scream from the Dark — WebAssembly Game Boy</title>
     <style>
-        body {
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html, body {
+            margin: 0;
+            padding: 0;
             background-color: #0a0a0f;
             color: #e0e0e0;
             font-family: 'Courier New', monospace;
+            overflow-x: hidden;
+            touch-action: manipulation;
+        }
+        body {
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-            box-sizing: border-box;
+            padding: 16px;
         }
         h1 {
             color: #c41e3a;
             text-shadow: 2px 2px 0 #000, 0 0 20px rgba(196, 30, 58, 0.5);
-            font-size: 2em;
+            font-size: 1.6em;
             letter-spacing: 2px;
-            margin: 0 0 8px 0;
+            margin: 0 0 6px 0;
             text-align: center;
         }
         h2 {
             color: #8b0000;
-            font-size: 0.85em;
+            font-size: 0.75em;
             font-weight: normal;
             font-style: italic;
-            margin: 0 0 24px 0;
+            margin: 0 0 16px 0;
             text-align: center;
         }
         canvas {
@@ -40,6 +45,7 @@
             image-rendering: crisp-edges;
             width: 320px;
             height: 288px;
+            max-width: 100%;
             border: 4px solid #2a2a2a;
             border-radius: 4px;
             box-shadow: 0 0 30px rgba(196, 30, 58, 0.3),
@@ -47,11 +53,11 @@
             display: block;
         }
         .controls {
-            margin-top: 20px;
+            margin-top: 16px;
             background: #1a1a1a;
-            padding: 12px 20px;
+            padding: 10px 16px;
             border-radius: 6px;
-            font-size: 13px;
+            font-size: 12px;
             line-height: 1.6;
             text-align: center;
             border: 1px solid #2a2a2a;
@@ -65,56 +71,126 @@
             font-weight: bold;
             border: 1px solid #3a3a3a;
         }
+
+        /* ============================================
+           MOBILE / TOUCH CONTROLS
+           Visible on screens narrower than 700px OR
+           when device has coarse pointer (touch).
+           ============================================ */
         #mobile-controls {
             display: none;
-            margin-top: 20px;
-            gap: 20px;
+            margin-top: 18px;
+            width: 100%;
+            max-width: 480px;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
         }
-        @media (max-width: 600px) {
-            #mobile-controls { display: flex; }
+        @media (max-width: 700px), (pointer: coarse) {
+            #mobile-controls { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 0 8px; }
             .controls { display: none; }
         }
-        .btn {
-            background: #1a1a1a;
+
+        /* Base touch button */
+        .tbtn {
+            background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%);
             color: #c41e3a;
-            border: 2px solid #2a2a2a;
+            border: 2px solid #3a3a3a;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
             font-weight: bold;
-            font-size: 14px;
-            touch-action: manipulation;
+            font-size: 18px;
+            touch-action: none;
             user-select: none;
-        }
-        .btn:active { background: #2a2a2a; }
-        .dpad {
-            display: grid;
-            grid-template-columns: 50px 50px 50px;
-            grid-template-rows: 50px 50px 50px;
-            gap: 4px;
-        }
-        .dpad .btn { border-radius: 6px; }
-        .d-up { grid-column: 2; grid-row: 1; }
-        .d-left { grid-column: 1; grid-row: 2; }
-        .d-right { grid-column: 3; grid-row: 2; }
-        .d-down { grid-column: 2; grid-row: 3; }
-        .action-btns {
+            -webkit-user-select: none;
             display: flex;
             align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.05s, background 0.05s, border-color 0.05s, box-shadow 0.05s;
+            box-shadow: 0 3px 0 #000, inset 0 1px 0 rgba(255,255,255,0.05);
+            min-width: 0;
+            min-height: 0;
+        }
+        .tbtn.pressed,
+        .tbtn:active,
+        .tbtn.active {
+            background: linear-gradient(180deg, #c41e3a 0%, #8b0000 100%);
+            color: #fff;
+            border-color: #c41e3a;
+            transform: translateY(2px);
+            box-shadow: 0 1px 0 #000, inset 0 1px 0 rgba(255,255,255,0.2);
+        }
+
+        /* D-pad: cross layout, larger buttons for thumbs */
+        .dpad {
+            display: grid;
+            grid-template-columns: 60px 60px 60px;
+            grid-template-rows: 60px 60px 60px;
+            gap: 4px;
+        }
+        .dpad .tbtn {
+            border-radius: 50% / 30%;
+        }
+        .d-up    { grid-column: 2; grid-row: 1; }
+        .d-left  { grid-column: 1; grid-row: 2; }
+        .d-right { grid-column: 3; grid-row: 2; }
+        .d-down  { grid-column: 2; grid-row: 3; }
+        .d-center {
+            grid-column: 2; grid-row: 2;
+            background: transparent;
+            border: none;
+            box-shadow: none;
+        }
+
+        /* A/B action buttons */
+        .actions {
+            display: flex;
             gap: 12px;
+            align-items: center;
         }
-        .btn-round {
-            width: 50px;
-            height: 50px;
+        .actions .tbtn {
+            width: 64px;
+            height: 64px;
             border-radius: 50%;
+            font-size: 22px;
         }
-        .btn-pill {
-            padding: 8px 14px;
-            border-radius: 20px;
-            font-size: 12px;
-        }
-        .start-select {
+        .btn-b { transform: rotate(-15deg); }
+        .btn-b.pressed, .btn-b:active { transform: rotate(-15deg) translateY(2px); }
+        .btn-a { transform: rotate(15deg); }
+        .btn-a.pressed, .btn-a:active { transform: rotate(15deg) translateY(2px); }
+
+        /* Start / Select pill buttons (top center) */
+        .sys {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
+            align-items: center;
         }
+        .sys .tbtn {
+            min-width: 78px;
+            height: 28px;
+            border-radius: 14px;
+            font-size: 11px;
+            letter-spacing: 1px;
+            padding: 0 14px;
+        }
+
+        /* Fullscreen & helpers */
+        .btn-fs {
+            margin-top: 12px;
+            background: #1a1a1a;
+            color: #c41e3a;
+            border: 1px solid #2a2a2a;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-family: monospace;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .btn-fs:hover { background: #2a2a2a; color: #fff; }
+
         #game-container {
             display: flex;
             flex-direction: column;
@@ -127,39 +203,31 @@
             height: 100vh;
             background-color: #0a0a0f;
             padding: 20px;
-            box-sizing: border-box;
             gap: 20px;
         }
         #game-container:fullscreen canvas {
             width: 80vmin;
             height: 72vmin;
             max-width: 100%;
-            max-height: 75vh;
+            max-height: 70vh;
         }
-        .btn-fs {
-            margin-top: 15px;
-            background: #1a1a1a;
-            color: #c41e3a;
-            border: 1px solid #2a2a2a;
-            padding: 8px 16px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-family: monospace;
-            font-size: 13px;
-            transition: all 0.2s;
-        }
-        .btn-fs:hover {
-            background: #2a2a2a;
-            color: #fff;
-        }
+
         .footer {
-            margin-top: 30px;
+            margin-top: 24px;
             text-align: center;
             color: #555;
             font-size: 11px;
         }
         .footer a { color: #c41e3a; text-decoration: none; }
         .footer a:hover { text-decoration: underline; }
+
+        /* Landscape: compact controls to leave room for screen */
+        @media (orientation: landscape) and (max-height: 500px) {
+            h1 { font-size: 1.1em; margin-bottom: 2px; }
+            h2 { display: none; }
+            canvas { height: 70vh; width: auto; }
+            #mobile-controls { margin-top: 8px; }
+        }
     </style>
 </head>
 <body>
@@ -173,19 +241,25 @@
         <button class="btn-fs" id="btn-fullscreen">⛶ Schermo Intero</button>
 
         <div id="mobile-controls">
-            <div class="dpad">
-                <button class="btn d-up" id="btn-up">▲</button>
-                <button class="btn d-left" id="btn-left">◀</button>
-                <button class="btn d-right" id="btn-right">▶</button>
-                <button class="btn d-down" id="btn-down">▼</button>
+            <!-- D-pad (sinistra) -->
+            <div class="dpad" aria-label="Directional pad">
+                <button class="tbtn d-up"    data-key="ArrowUp"    aria-label="Su">▲</button>
+                <button class="tbtn d-left"  data-key="ArrowLeft"  aria-label="Sinistra">◀</button>
+                <div class="d-center"></div>
+                <button class="tbtn d-right" data-key="ArrowRight" aria-label="Destra">▶</button>
+                <button class="tbtn d-down"  data-key="ArrowDown"  aria-label="Giù">▼</button>
             </div>
-            <div class="start-select">
-                <button class="btn btn-pill" id="btn-select">SELECT</button>
-                <button class="btn btn-pill" id="btn-start">START</button>
+
+            <!-- Start / Select (centro) -->
+            <div class="sys" aria-label="System buttons">
+                <button class="tbtn" data-key="Enter" id="btn-start" aria-label="Start">START</button>
+                <button class="tbtn" data-key=" "    id="btn-select" aria-label="Select">SELECT</button>
             </div>
-            <div class="action-btns">
-                <button class="btn btn-round" id="btn-b">B</button>
-                <button class="btn btn-round" id="btn-a">A</button>
+
+            <!-- A / B (destra, in stile GB inclinati) -->
+            <div class="actions" aria-label="Action buttons">
+                <button class="tbtn btn-b" data-key="x" id="btn-b" aria-label="B (corsa)">B</button>
+                <button class="tbtn btn-a" data-key="z" id="btn-a" aria-label="A (salto)">A</button>
             </div>
         </div>
     </div>
@@ -226,37 +300,74 @@
                 console.error('Errore:', err);
             });
 
-        // WasmBoy native: Z=A, X=B, Enter=Start, Space=Select
-        const bindButton = (id, keyDef) => {
-            const btn = document.getElementById(id);
-            const trigger = (type) => (e) => {
-                e.preventDefault();
-                let ev;
-                try {
-                    ev = new KeyboardEvent(type, { key: keyDef.key, code: keyDef.code, bubbles: true, cancelable: true });
-                } catch (e) {
-                    ev = document.createEvent('KeyboardEvent');
-                    ev.initKeyboardEvent(type, true, true, window, keyDef.key, 0, false, false, false, false);
-                }
-                document.dispatchEvent(ev);
-            };
-            btn.addEventListener('touchstart', trigger('keydown'), { passive: false });
-            btn.addEventListener('touchend', trigger('keyup'), { passive: false });
-            btn.addEventListener('mousedown', trigger('keydown'));
-            btn.addEventListener('mouseup', trigger('keyup'));
-            btn.addEventListener('mouseleave', trigger('keyup'));
+        /* ============================================
+           Universal button binder (data-key driven)
+           - Touch: synthetic keydown/keyup events
+           - Mouse: same
+           - Visual feedback: .pressed class
+           - Multi-touch: each button tracks its own state
+           ============================================ */
+        const KEY_CODE = {
+            'ArrowUp':'ArrowUp','ArrowDown':'ArrowDown','ArrowLeft':'ArrowLeft','ArrowRight':'ArrowRight',
+            'z':'KeyZ','Z':'KeyZ',
+            'x':'KeyX','X':'KeyX',
+            'Enter':'Enter','enter':'Enter',
+            ' ':'Space'
+        };
+        const KEY_KEY = {
+            'ArrowUp':'ArrowUp','ArrowDown':'ArrowDown','ArrowLeft':'ArrowLeft','ArrowRight':'ArrowRight',
+            'z':'z','Z':'z',
+            'x':'x','X':'x',
+            'Enter':'Enter','enter':'Enter',
+            ' ':' '
         };
 
-        bindButton('btn-up',    { key: 'ArrowUp',    code: 'ArrowUp' });
-        bindButton('btn-down',  { key: 'ArrowDown',  code: 'ArrowDown' });
-        bindButton('btn-left',  { key: 'ArrowLeft',  code: 'ArrowLeft' });
-        bindButton('btn-right', { key: 'ArrowRight', code: 'ArrowRight' });
-        bindButton('btn-a',     { key: 'z',          code: 'KeyZ' });
-        bindButton('btn-b',     { key: 'x',          code: 'KeyX' });
-        bindButton('btn-start', { key: 'Enter',      code: 'Enter' });
-        bindButton('btn-select',{ key: ' ',          code: 'Space' });
+        function dispatchKey(type, dataKey) {
+            const ev = new KeyboardEvent(type, {
+                key: KEY_KEY[dataKey] || dataKey,
+                code: KEY_CODE[dataKey] || dataKey,
+                bubbles: true,
+                cancelable: true,
+                composed: true
+            });
+            document.dispatchEvent(ev);
+        }
 
-        // Fullscreen toggle
+        document.querySelectorAll('.tbtn[data-key]').forEach(btn => {
+            const dataKey = btn.dataset.key;
+            let pressed = false;
+            const press = (e) => {
+                if (e) { e.preventDefault(); e.stopPropagation(); }
+                if (pressed) return;
+                pressed = true;
+                btn.classList.add('pressed');
+                dispatchKey('keydown', dataKey);
+            };
+            const release = (e) => {
+                if (e) { e.preventDefault(); e.stopPropagation(); }
+                if (!pressed) return;
+                pressed = false;
+                btn.classList.remove('pressed');
+                dispatchKey('keyup', dataKey);
+            };
+            // Touch (primary)
+            btn.addEventListener('touchstart', press, { passive: false });
+            btn.addEventListener('touchend',   release, { passive: false });
+            btn.addEventListener('touchcancel',release, { passive: false });
+            // Mouse (fallback per emulatori desktop e testing)
+            btn.addEventListener('mousedown',  press);
+            btn.addEventListener('mouseup',    release);
+            btn.addEventListener('mouseleave', release);
+            // Keyboard accessibility (Enter/Space su button = click = simulate tap)
+            btn.addEventListener('click', e => e.preventDefault()); // niente click reale
+        });
+
+        // Prevent default for arrow keys (avoid page scroll on Space/Arrows)
+        window.addEventListener('keydown', e => {
+            if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
+        }, { passive: false });
+
+        /* Fullscreen toggle */
         const gameContainer = document.getElementById('game-container');
         const fsButton = document.getElementById('btn-fullscreen');
         fsButton.addEventListener('click', () => {
