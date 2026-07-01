@@ -4,12 +4,6 @@
   <img src="assets/title_bg.png" alt="Title screen" width="320">
 </p>
 
-<p align="center">
-  <img src="assets/hello_iso_gb.png" alt="Early dev screenshot" width="320">
-</p>
-
-*Schermata di sviluppo iniziale (pixel-art isometrica, 160×144).*
-
 Un survival-horror procedurale in prospettiva isometrica per Game Boy (DMG/CGB), scritto in C con **GBDK-2020**. Sei imprigionato in un labirinto generato casualmente, illuminato solo da un ristretto quadrato di visibilità. Dei **fantasmi** si nascondono nel buio e ti braccano. L'unica via di fuga è una **botola** posta lontano dalla partenza: raggiungerla significa "sprofondare più giù" (*Going Deeper*) e affrontare un livello più grande, con più nemici e meno visibilità.
 
 ---
@@ -77,6 +71,12 @@ iso_x = (lx - ly) * 2 + 12    iso_y = (lx + ly) + 2
 px = (lx - ly) * 16 + 96      py = (lx + ly) * 8 + 16
 ```
 Camera: `scroll_x = px - 64`, `scroll_y = py - 72`.
+
+<p align="center">
+  <img src="assets/hello_iso_gb.png" alt="Schermata di sviluppo iniziale" width="320">
+</p>
+
+*Schermata di sviluppo iniziale (pixel-art isometrica, 160×144) — dà un'idea del motore grafico prima dell'aggiunta di nemici, nebbia e schermate multiple.*
 
 Documentazione approfondita: [`doc/`](doc/) — [index](doc/index.md), [report](doc/AScreamFromTheDark_report.md).
 
