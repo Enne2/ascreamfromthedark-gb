@@ -321,15 +321,29 @@
             'Enter':'Enter','enter':'Enter',
             ' ':' '
         };
+        // keyCode legacy (WasmBoy controlla anche questo in alcuni browser)
+        const KEY_KEYCODE = {
+            'ArrowUp':38,'ArrowDown':40,'ArrowLeft':37,'ArrowRight':39,
+            'z':90,'Z':90,
+            'x':88,'X':88,
+            'Enter':13,'enter':13,
+            ' ':32
+        };
 
         function dispatchKey(type, dataKey) {
+            // WasmBoy ascolta keydown/keyup su WINDOW (non su document),
+            // usando il code fisico (ArrowUp, KeyZ, KeyX, Enter, Space, ecc.)
             const ev = new KeyboardEvent(type, {
                 key: KEY_KEY[dataKey] || dataKey,
                 code: KEY_CODE[dataKey] || dataKey,
+                keyCode: KEY_KEYCODE[dataKey] || 0,
+                which: KEY_KEYCODE[dataKey] || 0,
                 bubbles: true,
                 cancelable: true,
                 composed: true
             });
+            // Dispatch su WINDOW (dove WasmBoy ascolta) E su document come fallback
+            window.dispatchEvent(ev);
             document.dispatchEvent(ev);
         }
 
