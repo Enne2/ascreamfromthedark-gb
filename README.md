@@ -1,5 +1,9 @@
 # A Scream from the Dark
 
+<p align="center">
+  <img src="assets/title_bg.png" alt="Title screen" width="320">
+</p>
+
 Un survival-horror procedurale in prospettiva isometrica per Game Boy (DMG/CGB), scritto in C con **GBDK-2020**. Sei imprigionato in un labirinto generato casualmente, illuminato solo da un ristretto quadrato di visibilità. Dei **fantasmi** si nascondono nel buio e ti braccano. L'unica via di fuga è una **botola** posta lontano dalla partenza: raggiungerla significa "sprofondare più giù" (*Going Deeper*) e affrontare un livello più grande, con più nemici e meno visibilità.
 
 ---
@@ -37,12 +41,7 @@ Crediti visibili anche nel gioco: schermata **SELECT** dal menu titolo.
 - **Schermate**: title con sfondo 2-bit, death con `claimed.png`, Going Deeper testuale, schermata conclusiva con font IBM.
 - **Test headless**: PyBoy + OpenCV + ROM di test isolate.
 
-## Schermate
-
-| Title | Death | Going Deeper |
-|---|---|---|
-| ![Title screen](assets/title_bg.png) | ![Death screen](assets/claimed.png) | ![Going Deeper](assets/next_level.png) |
-| Schermata iniziale (sfondo 2-bit) | `THE DARK HAS CLAIMED YOU` | Rampa della botola |
+> 📼 *Screenshot di sviluppo iniziale (`assets/hello_iso_gb.png`, 160×144) — dà un'idea della grafica pixel-art anche se ormai obsoleto rispetto alla versione finale.*
 
 ### Soundtrack
 
