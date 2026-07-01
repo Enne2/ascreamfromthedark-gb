@@ -37,6 +37,13 @@ Crediti visibili anche nel gioco: schermata **SELECT** dal menu titolo.
 - **Schermate**: title con sfondo 2-bit, death con `claimed.png`, Going Deeper testuale, schermata conclusiva con font IBM.
 - **Test headless**: PyBoy + OpenCV + ROM di test isolate.
 
+## Schermate
+
+| Title | Death | Going Deeper |
+|---|---|---|
+| ![Title screen](assets/title_bg.png) | ![Death screen](assets/claimed.png) | ![Going Deeper](assets/next_level.png) |
+| Schermata iniziale (sfondo 2-bit) | `THE DARK HAS CLAIMED YOU` | Rampa della botola |
+
 ### Soundtrack
 
 1. **Title Theme**: 112 note su 3 canali (melodia + basso indipendente + rintocchi noise), ~56 sec in loop. Lamento discendente in Re minore con 7ª armonica (C#) e discesa cromatica.
