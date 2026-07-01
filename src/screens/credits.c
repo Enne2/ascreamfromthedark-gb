@@ -17,7 +17,7 @@ void show_credits(void) {
     ending_puttext(3, 6,  "MATTEO BENEDETTO");
     ending_puttext(2, 9,  "GBDK 2020");
     ending_puttext(2, 10, "SDCC SM83");
-    ending_puttext(2, 11, "ME@ENNE2.NET 202606");
+    ending_puttext(1, 11, "ME@ENNE2.NET 202606");
     ending_puttext(1, 14, "PRESS B TO RETURN");
     // Window layer: tile map separato dal BG
     set_win_tiles(0, 0, 32, 32, map_buffer);

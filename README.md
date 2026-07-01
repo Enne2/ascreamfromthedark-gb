@@ -1,6 +1,24 @@
 # A Scream from the Dark
 
-Un survival-horror procedurale in prospettiva isometrica per Game Boy (DMG/CGB), scritto in C con **GBDK-2020**. Sei imprigionato in un labirinto generato casualmente, illuminato solo da un ristretto quadrato di visibilità. Dei **fantasmi** si nascondono nel buio e ti braccano. L'unica via di fuga è una **botola** posta lontano dalla partenza: raggiungerla significa "sprofondare più giù" (*Going Deeper*) e affrontare un livello più grande, con più nemici e meno visibilità. Dopo **8 livelli** il gioco finisce con un **finale tragico**.
+Un survival-horror procedurale in prospettiva isometrica per Game Boy (DMG/CGB), scritto in C con **GBDK-2020**. Sei imprigionato in un labirinto generato casualmente, illuminato solo da un ristretto quadrato di visibilità. Dei **fantasmi** si nascondono nel buio e ti braccano. L'unica via di fuga è una **botola** posta lontano dalla partenza: raggiungerla significa "sprofondare più giù" (*Going Deeper*) e affrontare un livello più grande, con più nemici e meno visibilità.
+
+---
+
+## Autore
+
+**Matteo Benedetto** — [me@enne2.net](mailto:me@enne2.net)
+
+Crediti visibili anche nel gioco: schermata **SELECT** dal menu titolo.
+
+## Release
+
+| Campo | Valore |
+|---|---|
+| Versione | `a8a6a32` |
+| Messaggio | Aggiungi suono di caduta nel vuoto |
+| Data | 2026-06-26 |
+| ROM | `build/AScreamFromTheDark.gb` (32 KB) |
+| Stack | GBDK-2020 · SDCC · SM83 |
 
 ---
 
@@ -13,19 +31,19 @@ Un survival-horror procedurale in prospettiva isometrica per Game Boy (DMG/CGB),
 - **DAS**: controlli alla Tetris — delay 12 frame, repeat 6 (walk) / 2 (run).
 - **Salto evasivo**: A+direzione, 2 tile, costa 60 stamina. Arco parabolico visivo.
 - **Corsa**: B+direzione, 8 frame/tile, 10 stamina/tile. Fallback a camminata se stamina < 10.
-- **Progressione 8 livelli + finale**: difficoltà crescente (maze, nemici, cooldown, stamina, nebbia). Indicatore `L<n>` in alto a sinistra. Sconfitta → ricomincia dallo stesso livello. Livello 8 → finale tragico.
+- **Progressione 8 livelli**: difficoltà crescente (maze, nemici, cooldown, stamina, nebbia). Indicatore `L<n>` in alto a sinistra. Sconfitta → ricomincia dallo stesso livello.
 - **Multi-nemico**: fino a 8 fantasmi (1 per livello). AI greedy, cooldown scalabile (60→11 frame), hitbox pixel-perfect.
-- **Audio procedurale**: 4 canali APU via VBL interrupt. Title (112 note, 3 canali), gameplay (96), gameover (128), finale dedicato (192, loop).
-- **Schermate**: title con sfondo 2-bit, death con `claimed.png`, Going Deeper testuale, finale tragico con font IBM.
+- **Audio procedurale**: 4 canali APU via VBL interrupt. Title (112 note, 3 canali), gameplay (96), gameover (128), schermata conclusiva (192, loop).
+- **Schermate**: title con sfondo 2-bit, death con `claimed.png`, Going Deeper testuale, schermata conclusiva con font IBM.
 - **Test headless**: PyBoy + OpenCV + ROM di test isolate.
 
 ### Soundtrack
 
-1. **Title Theme**: 112 note su 3 canali (melodia + basso indipendente + rintocchi noise), ~56 sec in loop. Lamento discendente in Re minore con 7ª armonica (C#) e discesa cromatica nell'abisso.
+1. **Title Theme**: 112 note su 3 canali (melodia + basso indipendente + rintocchi noise), ~56 sec in loop. Lamento discendente in Re minore con 7ª armonica (C#) e discesa cromatica.
 2. **Gameplay Theme**: battito ritmico ansioso ("eerie pulse") in La minore → Re minore → Mi7.
-3. **Game Over Theme**: concerto tragico polifonico di 128 note con percussioni (thud + crash).
-4. **Finale**: 192 note (24 accordi), lamento discendente Dm → abisso (C2), loop infinito. CH1 melodia sommessa + CH2 basso profondo + CH4 toll (mid/crash/deep).
-5. **Going Deeper**: melodia misteriosa discendente di 96 step (Am → Fmaj7 → Dm → E7 → C aug → abisso).
+3. **Game Over Theme**: concerto polifonico di 128 note con percussioni (thud + crash).
+4. **Schermata conclusiva**: brano dedicato di 192 note (24 accordi), lamento discendente Dm → loop infinito. CH1 melodia sommessa + CH2 basso + CH4 toll (mid/crash/deep).
+5. **Going Deeper**: melodia misteriosa discendente di 96 step (Am → Fmaj7 → Dm → E7 → C aug).
 
 ---
 
@@ -33,7 +51,7 @@ Un survival-horror procedurale in prospettiva isometrica per Game Boy (DMG/CGB),
 
 ### Architettura dei file
 - [`main.c`](src/main.c): entry point, loop VBL, `app_state` (0=title, 1=game).
-- [`engine.c`](src/engine.c): orchestrazione, game-over branches (sconfitta/vittoria/finale).
+- [`engine.c`](src/engine.c): orchestrazione, game-over branches (sconfitta/vittoria).
 - [`globals.c`](src/globals.c) / [`globals.h`](src/globals.h): stato globale (mappa `[21][21]`, `map_size`, `fog_radius`, `level`, `num_enemies`, enemy arrays[8], stamina, ecc.).
 - [`maze.c`](src/maze.c): DFS + loop + botola. Array statici in WRAM.
 - [`player_logic.c`](src/player_logic.c): DAS, camminata, corsa, salto, stamina.
@@ -64,7 +82,13 @@ Documentazione approfondita: [`doc/`](doc/) — [index](doc/index.md), [report](
 ```bash
 make clean && make
 ```
-Output: `build/hello_iso.gb` (32 KB) + `build/test_gameover.gb` + `build/test_finale.gb`.
+Output: `build/hello_iso.gb` (32 KB) + `build/test_gameover.gb`.
+
+Puoi rinominare il ROM principale con `make release`:
+```bash
+make release
+# Crea build/"AScreamFromTheDark.gb"
+```
 
 ---
 
@@ -74,4 +98,3 @@ Output: `build/hello_iso.gb` (32 KB) + `build/test_gameover.gb` + `build/test_fi
 2. **Movimento WRAM** — `python3 scripts/test_movement.py`
 3. **Glitch OpenCV** — `python3 scripts/opencv_analyze_tiles.py`
 4. **ROM game over** — `make build/test_gameover.gb`
-5. **ROM finale** — `make build/test_finale.gb` (va subito al finale con musica, per test rapidi)

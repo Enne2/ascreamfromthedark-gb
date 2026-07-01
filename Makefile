@@ -13,6 +13,10 @@ SRCS = $(SRC_DIR)/main.c $(SRC_DIR)/engine.c $(SRC_DIR)/globals.c $(SRC_DIR)/maz
 
 all: $(BUILD_DIR)/hello_iso.gb $(BUILD_DIR)/test_gameover.gb $(BUILD_DIR)/test_finale.gb
 
+# Rename the main ROM to match the game title
+release: all
+	cp $(BUILD_DIR)/hello_iso.gb $(BUILD_DIR)/"AScreamFromTheDark.gb"
+
 # Generate image assets
 generate_images: $(SCRIPTS_DIR)/generate_assets.py $(SCRIPTS_DIR)/generate_enemy.py $(SCRIPTS_DIR)/generate_level.py
 	cd $(ASSETS_DIR) && python3 ../$(SCRIPTS_DIR)/generate_assets.py
@@ -30,7 +34,7 @@ generate_c_assets: generate_images
 	$(PNG2ASSET) $(ASSETS_DIR)/level.png -c $(SRC_DIR)/level.c -sw 8 -sh 16 -bpp 2 -noflip -keep_palette_order -keep_duplicate_tiles
 	$(PNG2ASSET) $(ASSETS_DIR)/title_bg.png -c $(SRC_DIR)/title_bg.c -map -bpp 2 -noflip -keep_palette_order -max_palettes 1
 
-# Main ROM target
+# Main ROM target (rename to match the game title)
 $(BUILD_DIR)/hello_iso.gb: generate_c_assets $(SRCS)
 	mkdir -p $(BUILD_DIR)
 	$(LCC) $(LCCFLAGS) -o $(BUILD_DIR)/hello_iso.gb $(SRCS)
