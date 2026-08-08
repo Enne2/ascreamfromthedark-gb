@@ -52,7 +52,8 @@ px = (lx - ly) * 16 + 96      py = (lx + ly) * 8 + 16
 ```
 Camera: `scroll_x = px - 64`, `scroll_y = py - 72`.
 
-Documentazione approfondita: [`doc/`](doc/) — [index](doc/index.md), [report](doc/AScreamFromTheDark_report.md).
+Documentazione approfondita: [`docs/`](docs/) — [index](docs/index.md), [report](docs/AScreamFromTheDark_report.md).
+Sito documentazione (MkDocs): `mkdocs serve` in locale, deploy automatico su GitHub Pages via `.github/workflows/mkdocs.yml`.
 
 ---
 

@@ -1,0 +1,44 @@
+site_name: A Scream from the Dark
+site_description: Survival-horror procedurale isometrico per Game Boy (DMG/CGB) — documentazione tecnica
+site_url: https://enne2.github.io/gameboy-hello-iso/
+repo_url: https://github.com/enne2/gameboy-hello-iso
+repo_name: gameboy-hello-iso
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  language: it
+  palette:
+    scheme: slate
+    primary: deep purple
+    accent: purple
+  features:
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - content.code.copy
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.tabbed
+
+nav:
+  - Home: index.md
+  - Architettura: architecture.md
+  - Grafica e Rendering: graphics.md
+  - Generazione del Livello: generation.md
+  - Gameplay: gameplay.md
+  - AI (Fantasmi): ai.md
+  - Audio: audio.md
+  - Storico:
+      - Report tecnico (giu 2026): AScreamFromTheDark_report.md
+      - Audit codice e target (2026-07-30): audit_target_report_2026-07-30.md
+      - Audit tiling pavimento (2026-07-30): floor_tiling_audit_2026-07-30.md
+      - Ottimizzazione tiling (2026-08-08): tiling_optimization_validation_2026-08-08.md
+      - Consolidamento release (2026-08-08): release_hardening_2026-08-08.md

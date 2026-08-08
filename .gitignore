@@ -23,3 +23,6 @@ assets/wip/
 # Python caches
 __pycache__/
 *.pyc
+
+# MkDocs build output
+site/
