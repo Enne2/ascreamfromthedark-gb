@@ -1,5 +1,12 @@
 # A Scream from the Dark — Report Tecnico Approfondito
 
+> ⚠️ **Documento storico** — descrive lo stato del progetto a giugno 2026, prima delle
+> ottimizzazioni e dei fix di release. Diverse affermazioni (schermata `claimed.png`,
+> title music 112 note, test stale, ROM "piena") non corrispondono più al codice.
+> Per lo stato attuale vedi [audit 2026-07-30](audit_target_report_2026-07-30.md),
+> [ottimizzazione tiling 2026-08-08](tiling_optimization_validation_2026-08-08.md) e
+> [consolidamento release 2026-08-08](release_hardening_2026-08-08.md).
+
 > Survival-horror procedurale isometrico per Game Boy (DMG/CGB), scritto in C con **GBDK-2020** (SDCC).
 > Repository: `gameboy-hello-iso` · ROM: `build/hello_iso.gb` (32 KB).
 > ~6500 righe C/H + ~2000 righe Python (pipeline asset).

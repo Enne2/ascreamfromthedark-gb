@@ -174,7 +174,10 @@ void update_player_movement(uint8_t keys, uint8_t prev_keys) {
                 if (maze[player_ly + move_ly][player_lx + move_lx] == 0 && (maze[land_ly][land_lx] == 1 || maze[land_ly][land_lx] == 2)) {
                     // Il salto costa 60 stamina. Se ne hai meno, puoi tentare comunque
                     // ma rischi di cadere nel vuoto. Probabilita' proporzionale allo
-                    // stamina mancante: 0 sta = 0% caduta, 30 sta = 50%, 0 sta = 100%.
+                    // stamina mancante: 60 sta = 0% caduta, 30 sta = 50%, 0 sta = 255/256
+                    // (~99,6%, non il 100%: roll < 255 esclude solo il caso roll == 255).
+                    // Nota: il dado usa DIV_REG (timing-dipendente), non il PRNG del
+                    // labirinto; l'esito e' quindi legato al frame esatto di pressione.
                     uint8_t fall_chance = 0;
                     if (stamina < 60) {
                         fall_chance = (uint8_t)(((uint16_t)(60 - stamina) * 255) / 60);

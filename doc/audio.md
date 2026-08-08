@@ -18,15 +18,17 @@ Il Game Boy ha 4 canali audio, manipolati direttamente via registri hardware (`N
 ### Note frequencies
 Le costanti `N_*` sono precalcolate come `(2048 - 131072/freq)` e scritte in `NR13/NR23` (low byte) e `NR14/NR24` (high byte | 0x80 trigger). Range: N_C2 (44, ~131 Hz) a N_A5 (1899, ~880 Hz).
 
+Nota: `N_D2` (263) e `N_DS3` (1103) sono etichette storiche — `N_DS3` condivide il valore con `N_CS3` (1103), quindi nella salita cromatica del title bass la nota suonata è C#3, non D#3. Il valore non è stato modificato per non alterare la musica validata (vedi commento in `sound.c`).
+
 ## Tracce
 
-### Title Theme (112 note, 3 canali, ~56 sec, loop)
-Brano complesso e ricco di pathos. 112 note su 3 canali:
-- **CH1 melodia**: envelope sostenuto (NR12=0x87, fade up lungo = suono haunting). Progressione Dm → Bb → F → C → A7(con C#, tensione armonica) → Dm(climb al C5) → Gm → A7 → discesa cromatica nell'abisso.
-- **CH2 basso**: linea indipendente (`title_bass[112]`) che segue gli accordi con movimento. Envelope deep plucked (NR22=0xA3).
-- **CH4 noise**: rintocchi sparsi ad ogni cambio d'accordo (ogni 8 step, NR43=0x70 = toll profondo) per atmosfera desolata.
+### Title Theme (128 note, 3 canali, ~17 sec, loop)
+Brano d'inseguimento veloce e d'azione. 128 note su 3 canali, 8 frame/nota:
+- **CH1 melodia**: arpeggi ascendenti D-F-A-D (frase 1), C-E-G-C (frase 2), Bb-D-F-Bb (frase 3), poi melodia di tensione, salita cromatica (D4→D5) e climax su D5 ripetuto. Envelope staccato/urgente (NR12=0x92).
+- **CH2 basso**: linea indipendente (`title_bass[128]`) pulsante (D3, A2, Bb2, F2), salita cromatica e pedale di D nel climax. Envelope sharp (NR22=0x91).
+- **CH4 noise**: percussioni veloci — kick sul downbeat (ogni 4 step, NR43=0x73) e hi-hat sugli upbeat (ogni 2 step, NR43=0x20).
 
-Struttura: intro sparso → lamento → tensione/climax → crollo cromatico e discesa. Ispirazione: Castlevania (arpeggi gotici), Metroid II (desolazione), Link's Awakening (melancolia onirica).
+Struttura: arpeggio ascendente → tensione → climax (colpo di caccia) → discesa drammatica → cadenza con arresto improvviso. Ispirazione: Castlevania (arpeggi gotici), Metroid II (desolazione), Link's Awakening (melancolia onirica).
 
 ### Gameplay Theme (96 note, CH2, ~32 sec, loop)
 Battito ritmico ansioso ("eerie pulse") in La minore → Re minore → Mi7. 20 frame/nota. Pattern ripetuto che accelera la tensione dell'inseguimento.
@@ -42,7 +44,7 @@ Brano dedicato per il finale tragico (livello 8). Lamento discendente in Re mino
 
 Struttura: lamento Dm-C-Bb-A7 → intensificazione con arpeggi alti (lo "scream") → crollo con basso che scende fino al Do più grave (N_C2) → silenzio. 14 frame/nota (sommesso). Loop infinito.
 
-### Going Deeper (96 note, CH1+CH2, ~36 sec)
+### Going Deeper (96 note, CH1+CH2, ~24 sec)
 Melodia misteriosa discendente (Am → Fmaj7 → Dm → E7 → C aug → abisso). 15 frame/nota. Usata per la schermata di transizione tra livelli.
 
 ## Sound Effects

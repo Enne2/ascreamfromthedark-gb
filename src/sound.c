@@ -37,8 +37,12 @@ static volatile uint8_t finale_music_step = 0;
 #define N_A2 857
 #define N_AS2 907
 #define N_B2 961
-#define N_D2 44  // D2 same freq as C2 region (low)
-#define N_DS3 1103  // D#3
+#define N_D2 263  // D2 reale (73.42 Hz); il vecchio valore 44 era un duplicato di N_C2
+#define N_DS3 1103  // D#3 (etichetta storica; il valore coincide con N_CS3 = 1103)
+// Nota: N_DS3 condivide il valore con N_CS3. Nella salita cromatica del title
+// bass (D3, D#3, E3, ...) la nota suonata e' quindi C#3, non D#3: possibile bug
+// di intonazione o scelta artistica. Il valore non e' stato modificato per non
+// alterare la musica validata; il D#3 corretto sarebbe ~1205.
 #define N_DS4 1575  // D#4
 #define N_C3 1046
 #define N_CS3 1103

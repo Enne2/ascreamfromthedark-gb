@@ -38,15 +38,27 @@ La stamina si ricarica di 1 punto ogni `stamina_recharge_rate` frame (60 al live
 A+direzione → atterraggio **2 tile** più in là. Condizioni:
 1. La cella intermedia (+1) **DEVE** essere un muro (`maze == 0`).
 2. La cella di arrivo (+2) deve essere pavimento o botola.
-3. Stamina ≥ 60.
+3. Stamina ≥ 60 per un salto **sicuro**.
 
 Costo: 60 stamina. Arco parabolico solo visivo: `y_offset = (move_progress * (16 - move_progress)) >> 2` (apice 16px a frame 8). La logica resta 2D grid-based.
+
+### Salto rischioso (stamina < 60)
+
+Con meno di 60 stamina il salto è **comunque consentito**, ma c'è una probabilità di cadere nel vuoto proporzionale alla stamina mancante:
+
+```c
+fall_chance = (60 - stamina) * 255 / 60;   // 60 sta = 0%, 30 sta = 50%, 0 sta = 255/256 (~99,6%)
+roll = DIV_REG;                             // dado hardware, timing-dipendente
+if (roll < fall_chance) → caduta
+```
+
+In caso di caduta il giocatore atterra sulla cella muro intermedia, precipita con un'animazione dedicata (suono di caduta su CH1+CH4) e muore (`game_over = 1`, timer 30 frame). Il dado usa `DIV_REG` (non il PRNG del labirinto): l'esito dipende dal frame esatto di pressione.
 
 ## Stamina
 
 - 100 punti massimi.
 - Ricarica: 1 punto ogni `stamina_recharge_rate` frame (60..144, scala col livello).
-- Salto: costa 60 (disabilita ulteriori balzi per ~1 min).
+- Salto: costa 60 (salto sicuro); sotto 60 il salto è rischioso (vedi sopra).
 - Corsa: costa 10/tile (da pieno, ~10 tile di corsa).
 - Barra UI: 5 sprite in alto a destra, conversione `stamina*40/100` → pixel.
 
@@ -73,8 +85,8 @@ Costo: 60 stamina. Arco parabolico solo visivo: `y_offset = (move_progress * (16
 ## Schermate di Fine Gioco
 
 ### Sconfitta (`game_over = 1`)
-- 45 frame di "fermo immagine" drammatico.
-- Poi: schermata `claimed.png` a tutto schermo + metasprite "GAME OVER".
+- 45 frame di "fermo immagine" drammatico (cattura da un fantasma) oppure 30 frame (caduta nel vuoto da salto rischioso).
+- Poi: schermata testuale con font IBM — "THE DARK CLAIMED YOU / PRESS START AND RETRY" su sfondo nero (BGP invertito) + metasprite "GAME OVER".
 - Musica: concerto tragico polifonico (128 note, noise percussion).
 - START → ricomincia dallo stesso livello.
 

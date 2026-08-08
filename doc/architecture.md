@@ -23,16 +23,16 @@ Il gioco nasceva da un monolite `engine.c` di 1000+ righe, poi rifattorizzato in
 
 | File | Righe | Ruolo |
 |------|-------|-------|
-| `main.c` | ~30 | Entry point, loop VBL, macchina a stati `app_state` (0=title, 1=game). |
-| `engine.c` | ~290 | "Direttore d'orchestra": `title_init/update`, `engine_init`, `engine_update`. Gestisce game over (sconfitta/vittoria/finale), schermate di transizione. |
-| `globals.c/h` | ~80 | Stato globale centralizzato: mappa, camera, player, enemy (array), stamina, level, fog_radius, map_size. |
-| `maze.c` | ~140 | Generazione procedurale DFS + loop + botola. |
-| `player_logic.c` | ~200 | Input, DAS, state machine, camminata, corsa, salto, stamina. |
-| `enemy_logic.c` | ~140 | AI greedy multi-entity, cooldown scalabile, rendering nemici, hitbox. |
-| `render.c` | ~280 | Proiezione isometrica, fog of war scalabile, auto-tiling multi-pass, flush dinamico, stamina UI, level HUD, sprite player. |
-| `sound.c` | ~430 | Sequencer audio via VBL: title (112 note), gameplay (96), gameover (128), finale (192, loop). |
+| `main.c` | 60 | Entry point, loop VBL, macchina a stati `app_state` (0=title, 1=game). |
+| `engine.c` | 344 | "Direttore d'orchestra": `title_init/update`, `engine_init`, `engine_update`. Gestisce game over (sconfitta/vittoria/finale), schermate di transizione. |
+| `globals.c/h` | 54/105 | Stato globale centralizzato: mappa, camera, player, enemy (array), stamina, level, fog_radius, map_size. |
+| `maze.c` | 170 | Generazione procedurale DFS + loop + botola. |
+| `player_logic.c` | 265 | Input, DAS, state machine, camminata, corsa, salto (anche rischioso), stamina. |
+| `enemy_logic.c` | 148 | AI greedy multi-entity, cooldown scalabile, rendering nemici, hitbox. |
+| `render.c` | 409 | Proiezione isometrica, fog of war scalabile, auto-tiling multi-pass, flush incrementale, stamina UI, level HUD, sprite player. |
+| `sound.c` | 506 | Sequencer audio via VBL: title (128 note), gameplay (96), gameover (128), finale (192, loop). |
 
-Asset generati da `png2asset`: `tiles.c`, `player.c`, `enemy.c`, `gameover.c`, `stamina.c`, `level.c`, `claimed.c`, `title_bg.c`.
+Asset generati da `png2asset`: `tiles.c`, `player.c`, `enemy.c`, `gameover.c`, `stamina.c`, `level.c`, `next_level.c`, `title_bg.c`, `tiling_parts.c` (tabelle compatte generate da `generate_tiling_parts.py`).
 
 ## Stato globale (`globals.h`)
 
@@ -67,9 +67,9 @@ Il `Makefile` orchestra questo processo: `make clean && make` rigenera tutto da 
 
 | Risorsa | Limite | Utilizzo attuale |
 |---------|--------|------------------|
-| ROM | 32 KB | ~32 KB (pieno) |
-| WRAM | 8 KB | ~3 KB (maze 441B + map_buffer 1KB + enemy arrays 88B + statici maze.c ~1KB + globals) |
+| ROM | 32 KB | 26.979 B `_CODE + _HOME` (~5,8 KiB liberi) |
+| WRAM | 8 KB | 2.721 B (maze 441B + map_buffer 1KB + enemy arrays 88B + statici maze.c ~1KB + globals) |
 | VRAM tile data | 384 tile (6 KB) | ~200 tile (BG + sprite condivisi) |
-| OAM (sprite) | 40 sprite | ~27 (player 2 + enemies 16 + stamina 5 + HUD 3 + gameover 10) |
+| OAM (sprite) | 40 sprite | 25-26 attivi in gameplay (player 2 + enemies fino a 16 + stamina 5 + HUD 2-3) |
 | Sprite/scanline | 10 | Rispettato (HUD in alto, player al centro, nemici sparsi) |
 | CPU | 4.19 MHz | LERP a punto fisso, no float, no sqrt |

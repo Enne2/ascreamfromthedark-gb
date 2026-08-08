@@ -43,33 +43,27 @@ Il background del Game Boy non ha trasparenze hardware. Per gestire l'overlappin
 
 Questo preserva la grafica 3D della botola senza usare sprite hardware (evitando flickering per il limite di 10 sprite/scanline).
 
-## Flush Dinamico a 16 Righe
+## Flush Incrementale (Dirty Rectangle con Wrap)
 
-`draw_map` azzera `map_buffer` (32×32), disegna solo la finestra fog, poi trasferisce al background hardware. Il flush è **dinamico a 16 righe** centrato sulla `iso_y` del centro di disegno, con gestione del wrap della mappa 32×32:
+`draw_map` compone `map_buffer` (32×32) disegnando solo la finestra fog, poi trasferisce al background hardware **solo l'unione fra i bounds isometrici precedenti e correnti** (dirty rectangle):
 
-```c
-int16_t center_iso_y = center_x + center_y + 2;
-uint8_t start = (center_iso_y - 8) & 31;
-if (start + 16 <= 32) {
-    set_bkg_tiles(0, start, 32, 16, &map_buffer[start * 32]);
-} else {
-    // wrap: due chiamate
-    set_bkg_tiles(0, start, 32, 32 - start, &map_buffer[start * 32]);
-    set_bkg_tiles(0, 0, 32, 16 - (32 - start), map_buffer);
-}
-```
+- l'area nuova rende visibile il nuovo fog;
+- l'area vecchia trasferisce gli zero necessari a cancellare il bordo uscente;
+- il rettangolo viene diviso in al massimo quattro segmenti quando attraversa il bordo circolare 32×32 (`flush_wrapped_map_rect`);
+- il primo frame dopo titolo/intermezzo/cambio livello invalida la cache e forza un full flush da 1.024 byte;
+- un salto di coordinate che estende l'unione oltre una rivoluzione della tilemap usa lo stesso fallback.
 
-16 righe (512 byte) mantengono le prestazioni originali. Il flush è centrato dinamicamente perché con labirinti grandi (fino a 21×21) la finestra fog, in coordinate iso assolute, wrappa fuori dal vecchio range fisso 2-17.
+Costo per un passo interno: fino a 242 byte con fog raggio 2 (22×11 tile) e 98 byte con raggio 1 (14×7), contro i 512 byte del vecchio flush fisso a 16 righe.
 
-`draw_map` è chiamato solo ai passi del movimento (progress 8 e completamento), non ogni frame.
+`draw_map` è chiamato **una sola volta per passo** (a metà movimento, `move_progress == 8`): il redraw a completamento è stato eliminato perché produceva byte identici (stesso centro, stessa mappa, stesso fog).
 
 ## HUD via Sprite
 
 ### Barra Stamina (alto destra)
-5 sprite (OAM 18-22), coordinate schermo fisse (indipendenti dallo scroll). Conversione `stamina*40/100` → pixel. Tile caricati a `tiles_TILE_COUNT` (indici ≥128) per evitare overlap VRAM con i tile del background (workaround commit `93deb35`).
+5 sprite (OAM 18-22), coordinate schermo fisse (indipendenti dallo scroll). Conversione `stamina*40/100` → pixel. Tile caricati a `STAMINA_SPRITE_BASE` (152, base **pari** dedicata: in modalità 8x16 l'hardware ignora il bit basso dell'indice) per evitare overlap VRAM con i tile del background (workaround commit `93deb35`, corretto in release 2026-08-08).
 
 ### Indicatore Livello (alto sinistra)
-3 sprite (OAM 23-25) che mostrano `L<n>` usando l'asset `level.png` (11 glifi 8×16: L, 0-9). Base VRAM allineata a indice **pari** (in modalità 8x16 l'hardware ignora il LSB del tile index). Generato con `png2asset -keep_duplicate_tiles` per ordine tile prevedibile. Nascosto durante game over.
+3 sprite (OAM 23-25) che mostrano `L<n>` usando l'asset `level.png` (11 glifi 8×16: L, 0-9). Base VRAM `LEVEL_SPRITE_BASE` (178, pari, subito dopo i tile della stamina). Generato con `png2asset -keep_duplicate_tiles` per ordine tile prevedibile. Nascosto durante game over.
 
 ### Player Sprite
 Metasprite 16×16 (OAM 0-1), 8 frame (4 direzioni × 2 frame camminata). Arco parabolico per il salto: `y_offset = (move_progress * (16 - move_progress)) >> 2`. Animazione camminata: `frame_offset = (move_progress >> 2) & 1` (più veloce in corsa, dato che move_progress incrementa di 2).

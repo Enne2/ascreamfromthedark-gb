@@ -5,7 +5,7 @@
 
 // Capacita' massima degli array di appoggio (in WRAM, statici per non saturare
 // lo stack hardware del LR35902). Le stanze del DFS sono le celle dispari:
-// al massimo (MAX_MAP_SIZE/2)^2 = 8*8 = 64 per un labirinto 17x17.
+// al massimo (MAX_MAP_SIZE/2)^2 = 10*10 = 100 per un labirinto 21x21.
 #define MAX_ROOMS ((MAX_MAP_SIZE / 2) * (MAX_MAP_SIZE / 2))
 #define MAX_CELLS (MAX_MAP_SIZE * MAX_MAP_SIZE)
 

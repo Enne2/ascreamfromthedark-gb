@@ -8,7 +8,7 @@ Sei imprigionato in un labirinto generato casualmente, illuminato solo da un ris
 
 ## Indice dei Capitoli
 
-1. **[Architettura di Base](architecture.md)** — Struttura del codice, moduli, stato globale, pipeline asset, vincoli hardware.
+1. **[Architettura di Base](architecture.md)** — Struttura del codice, moduli, stato globale, pipeline asset, vincoli hardware. Include le schermate di intro, crediti e istruzioni (gestite da `main.c` + `src/screens/`).
 
 2. **[Motore Grafico e Rendering](graphics.md)** — Proiezione isometrica, auto-tiling multi-pass, fog of war scalabile, flush dinamico, VRAM management.
 
@@ -18,9 +18,9 @@ Sei imprigionato in un labirinto generato casualmente, illuminato solo da un ris
 
 5. **[Intelligenza Artificiale (Fantasmi)](ai.md)** — Multi-entity (fino a 8 fantasmi), pathfinding greedy, cooldown scalabile, hitbox pixel-perfect.
 
-6. **[Sintesi Audio e Musica](audio.md)** — 4 canali APU, sequencer via VBL interrupt, title music (112 note, 3 canali), gameplay eerie, gameover, finale dedicato (192 note, loop).
+6. **[Sintesi Audio e Musica](audio.md)** — 4 canali APU, sequencer via VBL interrupt, title music (128 note, 3 canali), gameplay eerie, gameover, finale dedicato (192 note, loop).
 
-7. **[Report Tecnico Approfondito](AScreamFromTheDark_report.md)** — Analisi completa di architettura, funzionalità, workaround storici e debiti tecnici.
+7. **[Report Tecnico Approfondito](AScreamFromTheDark_report.md)** — ⚠️ *Documento storico* (giugno 2026): analisi completa di architettura, funzionalità, workaround storici e debiti tecnici. Diverse affermazioni non corrispondono più al codice attuale.
 
 8. **[Audit codice, documentazione e target — 2026-07-30](audit_target_report_2026-07-30.md)** — Verifica “as built” dello snapshot `a8a6a32`: profilo reale della ROM, compatibilità DMG/CGB, budget ROM/WRAM/VRAM/OAM, smoke test, divergenze documentali, rischi e piano di intervento.
 

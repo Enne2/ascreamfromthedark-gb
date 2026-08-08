@@ -11,21 +11,21 @@ Un survival-horror procedurale in prospettiva isometrica per Game Boy (DMG/CGB),
 - **Fog of War scalabile**: visibilità basata su Chebyshev. 5×5 (livelli 1-6), 3×3 (livelli 7-8). Il nemico si attiva solo quando entra nella nebbia.
 - **Movimento interpolato (LERP)**: punto fisso `>>4`, no float. 16 frame/passo (8 in corsa).
 - **DAS**: controlli alla Tetris — delay 12 frame, repeat 6 (walk) / 2 (run).
-- **Salto evasivo**: A+direzione, 2 tile, costa 60 stamina. Arco parabolico visivo.
+- **Salto evasivo**: A+direzione, 2 tile, costa 60 stamina (salto sicuro). Sotto 60 stamina il salto è rischioso: probabilità di caduta nel vuoto proporzionale alla stamina mancante. Arco parabolico visivo.
 - **Corsa**: B+direzione, 8 frame/tile, 10 stamina/tile. Fallback a camminata se stamina < 10.
 - **Progressione 8 livelli + finale**: difficoltà crescente (maze, nemici, cooldown, stamina, nebbia). Indicatore `L<n>` in alto a sinistra. Sconfitta → ricomincia dallo stesso livello. Livello 8 → finale tragico.
 - **Multi-nemico**: fino a 8 fantasmi (1 per livello). AI greedy, cooldown scalabile (60→11 frame), hitbox pixel-perfect.
-- **Audio procedurale**: 4 canali APU via VBL interrupt. Title (112 note, 3 canali), gameplay (96), gameover (128), finale dedicato (192, loop).
-- **Schermate**: title con sfondo 2-bit, death con `claimed.png`, Going Deeper testuale, finale tragico con font IBM.
+- **Audio procedurale**: 4 canali APU via VBL interrupt. Title (128 note, 3 canali), gameplay (96), gameover (128), finale dedicato (192, loop).
+- **Schermate**: title con sfondo 2-bit, death testuale con font IBM, Going Deeper testuale, finale tragico con font IBM.
 - **Test headless**: PyBoy + OpenCV + ROM di test isolate.
 
 ### Soundtrack
 
-1. **Title Theme**: 112 note su 3 canali (melodia + basso indipendente + rintocchi noise), ~56 sec in loop. Lamento discendente in Re minore con 7ª armonica (C#) e discesa cromatica nell'abisso.
+1. **Title Theme**: 128 note su 3 canali (melodia + basso indipendente + kick/hi-hat noise), ~17 sec in loop. Arpeggi di inseguimento in Re minore con salita cromatica e climax.
 2. **Gameplay Theme**: battito ritmico ansioso ("eerie pulse") in La minore → Re minore → Mi7.
 3. **Game Over Theme**: concerto tragico polifonico di 128 note con percussioni (thud + crash).
 4. **Finale**: 192 note (24 accordi), lamento discendente Dm → abisso (C2), loop infinito. CH1 melodia sommessa + CH2 basso profondo + CH4 toll (mid/crash/deep).
-5. **Going Deeper**: melodia misteriosa discendente di 96 step (Am → Fmaj7 → Dm → E7 → C aug → abisso).
+5. **Going Deeper**: melodia misteriosa discendente di 96 step (~24 s, Am → Fmaj7 → Dm → E7 → C aug → abisso).
 
 ---
 
