@@ -12,6 +12,8 @@ consultazione o eventuale ripristino. **Non fanno parte della ROM.**
 - `test_stairs_connect.c`, `test_going_deeper.c` — ROM di test sperimentali
   non più invocate dal Makefile. I test supportati sono `make test` e le ROM
   `test_gameover.gb` / `test_finale.gb`.
+- `spikes.c/h` — asset `png2asset` per un ostacolo "spikes" (da GitHub,
+  `assets/spikes.png` ora in `assets/wip/`). Non linkato nel Makefile.
 
 Per ripristinare un modulo: spostarlo in `src/` e aggiungerlo a `SRCS` nel
 Makefile (e rigenerare l'asset PNG corrispondente da `assets/wip/`).

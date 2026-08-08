@@ -1,8 +1,8 @@
 site_name: A Scream from the Dark
 site_description: Survival-horror procedurale isometrico per Game Boy (DMG/CGB) — documentazione tecnica
-site_url: https://enne2.github.io/gameboy-hello-iso/
-repo_url: https://github.com/enne2/gameboy-hello-iso
-repo_name: gameboy-hello-iso
+site_url: https://enne2.github.io/ascreamfromthedark-gb/
+repo_url: https://github.com/Enne2/ascreamfromthedark-gb
+repo_name: ascreamfromthedark-gb
 edit_uri: edit/main/docs/
 
 theme:
@@ -29,6 +29,7 @@ markdown_extensions:
   - pymdownx.tabbed
 
 nav:
+  - Gioca (demo wasmboy): demo/index.html
   - Home: index.md
   - Architettura: architecture.md
   - Grafica e Rendering: graphics.md
