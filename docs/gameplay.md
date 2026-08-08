@@ -31,7 +31,7 @@ Tenendo **B** + direzione con stamina ≥ 10:
 - Se stamina < 10: ripiega silenziosamente su camminata normale (0 costo).
 - La corsa si riattiva da sola quando la stamina torna ≥ 10.
 
-La stamina si ricarica di 1 punto ogni `stamina_recharge_rate` frame (60 al livello 1, 144 al livello 8 — più lenta ai livelli alti).
+La stamina si ricarica di 1 punto ogni `stamina_recharge_rate` frame (60 ai livelli iniziali, 144 ai livelli avanzati — più lenta ai livelli alti).
 
 ## Salto Evasivo (A + direzione)
 
@@ -62,19 +62,19 @@ In caso di caduta il giocatore atterra sulla cella muro intermedia, precipita co
 - Corsa: costa 10/tile (da pieno, ~10 tile di corsa).
 - Barra UI: 5 sprite in alto a destra, conversione `stamina*40/100` → pixel.
 
-## Progressione Livelli (8 livelli + finale)
+## Progressione Livelli
 
 ### Transizioni
 - **Titolo → gioco**: `level = 1`, `engine_init()` genera il primo labirinto.
 - **Vittoria (botola) + START**: `level++`, `engine_init()` genera il livello successivo.
 - **Sconfitta + START**: si ricomincia dallo **stesso livello** raggiunto (non si azzera).
-- **Finale (livello 8 superato)**: `game_over = 3` invece di 2.
+- **Finale (ultimo livello superato)**: `game_over = 3` invece di 2.
 
 ### Indicatore HUD
 `L<n>` in alto a sinistra via 3 sprite (OAM 23-25) dall'asset `level.png` (glifi L, 0-9). Aggiornato ogni frame in `engine_update`; nascosto durante game over.
 
 ### Difficoltà scalabile (vedi anche `generation.md` e `ai.md`)
-| Assi | Livello 1 | Livello 8 |
+| Assi | Livelli iniziali | Livelli avanzati |
 |------|-----------|-----------|
 | Dimensione labirinto | 7×7 | 21×21 |
 | Numero fantasmi | 1 | 8 |
@@ -96,9 +96,9 @@ In caso di caduta il giocatore atterra sulla cella muro intermedia, precipita co
 - Musica: melodia misteriosa discendente (96 step).
 - START → livello successivo.
 
-### Finale tragico (`game_over = 3`, livello 8)
+### Finale (`game_over = 3`, ultimo livello)
 - 30 frame di dissolvenza.
 - Sfondo nero (BGP invertito 0x1B), font IBM ricaricato.
-- Testo: messaggio tragico (spoiler-free, da scoprire giocando).
+- Testo: messaggio finale (spoiler-free, da scoprire giocando).
 - Musica dedicata: 192 step (24 accordi), lamento discendente in Re minore che cola nell'abisso, in loop.
 - START → torna al titolo (nuova partita dal livello 1).

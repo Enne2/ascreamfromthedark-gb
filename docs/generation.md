@@ -18,20 +18,20 @@ Questo evita l'overflow dello stack hardware del Game Boy (che è piccolo).
 
 ## Dimensioni Crescenti col Livello
 
-La dimensione del labirinto cresce di 2 tile per lato ad ogni livello:
+La dimensione del labirinto cresce di 2 tile per lato ad ogni livello, partendo da 7×7 fino a un massimo di 21×21 (sempre dispari, per il pattern stanza/muro):
 
-| Livello | map_size | Stanze | Tile data |
-|---------|----------|--------|-----------|
-| 1 | 7×7 | 9 | 49 B |
-| 2 | 9×9 | 16 | 81 B |
-| 3 | 11×11 | 25 | 121 B |
-| 4 | 13×13 | 36 | 169 B |
-| 5 | 15×15 | 49 | 225 B |
-| 6 | 17×17 | 64 | 289 B |
-| 7 | 19×19 | 81 | 361 B |
-| 8 | 21×21 | 100 | 441 B |
+| map_size | Stanze | Tile data |
+|---|---:|---:|
+| 7×7 | 9 | 49 B |
+| 9×9 | 16 | 81 B |
+| 11×11 | 25 | 121 B |
+| 13×13 | 36 | 169 B |
+| 15×15 | 49 | 225 B |
+| 17×17 | 64 | 289 B |
+| 19×19 | 81 | 361 B |
+| 21×21 | 100 | 441 B |
 
-`map_size = MAP_SIZE + 2*(level-1)`, capped a `MAX_MAP_SIZE = 21`. Sempre dispari (per il pattern stanza/muro). L'array `maze` è allocato `[21][21]` (441 byte) e i moduli usano `map_size` come bound runtime.
+`map_size = MAP_SIZE + 2*(level-1)`, capped a `MAX_MAP_SIZE = 21`. L'array `maze` è allocato `[21][21]` (441 byte) e i moduli usano `map_size` come bound runtime.
 
 ## Rottura del Perfect Maze (Loop)
 

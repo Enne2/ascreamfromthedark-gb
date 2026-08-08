@@ -2,7 +2,7 @@
 
 ## Multi-Entity (fino a 8 fantasmi)
 
-Il gioco supporta fino a `MAX_ENEMIES = 8` fantasmi coesistenti. Il numero attivo è `num_enemies = level` (1 al livello 1, 8 al livello 8). Lo stato di ciascun fantasma è in **array indicizzati**:
+Il gioco supporta fino a `MAX_ENEMIES = 8` fantasmi coesistenti. Il numero attivo è `num_enemies = level` (1 ai livelli iniziali, 8 ai livelli avanzati). Lo stato di ciascun fantasma è in **array indicizzati**:
 
 ```c
 uint8_t enemy_lx[8], enemy_ly[8];
@@ -35,8 +35,8 @@ if (dist <= fog_radius) { // inizia a inseguire }
 
 ### Cooldown
 Dopo ogni passo (16 frame di LERP), il fantasma aspetta `enemy_step_cooldown` frame:
-- Livello 1: 60 frame (1 secondo) — lento, gestibile.
-- Livello 8: 11 frame — implacabile, quasi continuo.
+- Livelli iniziali: 60 frame (1 secondo) — lento, gestibile.
+- Livelli avanzati: 11 frame — implacabile, quasi continuo.
 
 I cooldown iniziali sono **sfasati** (`enemy_step_cooldown + i*8`) così i fantasmi non si muovono in sincrono.
 

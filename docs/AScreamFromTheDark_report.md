@@ -15,14 +15,14 @@
 
 ## 1. Identità del gioco
 
-"A Scream from the Dark" è un survival-horror procedurale in prospettiva isometrica 2.5D. Sei imprigionato in un labirinto generato casualmente, illuminato solo da un ristretto quadrato di visibilità (Fog of War). Dei **fantasmi** si nascondono nel buio e ti braccano. L'unica via è una **botola** posta lontano dalla partenza: raggiungerla significa sprofondare più giù (*Going Deeper*) e affrontare un livello più grande, con più nemici e meno visibilità. Dopo **8 livelli** il gioco finisce con un **finale tragico**.
+"A Scream from the Dark" è un survival-horror procedurale in prospettiva isometrica 2.5D. Sei imprigionato in un labirinto generato casualmente, illuminato solo da un ristretto quadrato di visibilità (Fog of War). Dei **fantasmi** si nascondono nel buio e ti braccano. L'unica via è una **botola** posta lontano dalla partenza: raggiungerla significa sprofondare più giù (*Going Deeper*) e affrontare un livello più grande, con più nemici e meno visibilità. Dopo una serie di livelli sempre più profondi, il gioco finisce con un **finale**.
 
 ### Loop di gioco
 1. **Title screen** — sfondo 2-bit + tema musicale tragico (112 note, 3 canali, ~56 sec in loop).
 2. **Gameplay** — esplorazione a griglia con camminata, **corsa** (B+direzione), **salto evasivo** (A+direzione), stamina, AI greedy multi-nemico, hitbox pixel-perfect. Indicatore `L<n>` in alto a sinistra.
 3. **Game Over (Sconfitta)** — 45 frame di fermo immagine → schermata `claimed.png` + metasprite "GAME OVER" + musica tragica (128 note). START → ricomincia dallo stesso livello.
 4. **Going Deeper (Vittoria, livelli 1-7)** — schermata testuale "GOING DEEPER / LEVEL N" + melodia misteriosa (96 step). START → livello successivo (più grande, più difficile).
-5. **Finale (Livello 8)** — `game_over = 3`: sfondo nero, messaggio tragico (spoiler-free) + musica dedicata (192 note, lamento discendente in Re minore, loop). START → titolo.
+5. **Finale** — `game_over = 3`: sfondo nero, messaggio finale (spoiler-free) + musica dedicata (192 note, lamento discendente in Re minore, loop). START → titolo.
 
 ---
 
@@ -61,7 +61,7 @@ Camera: `scroll_x = px - 64`, `scroll_y = py - 72`.
 - **DFS iterativo** con stack in WRAM (statico, sized per `MAX_MAP_SIZE=21`). Celle dispari = stanze, pari = muri.
 - **Loop**: riapertura 15% dei muri → percorsi alternativi.
 - **Botola**: cella a Chebyshev ≥ `map_size/2` da (1,1), scelta casuale.
-- **Dimensioni crescenti**: `map_size = 7 + 2*(level-1)`, capped 21 (livello 8). Sempre dispari.
+- **Dimensioni crescenti**: `map_size = 7 + 2*(level-1)`, capped 21 (ultimo livello). Sempre dispari.
 
 ### 3.3 Movimento & DAS (`player_logic.c`)
 - **State machine**: durante `is_moving` (16 frame, 8 in corsa) input ignorato.
@@ -101,14 +101,14 @@ Sequencer via VBL interrupt, 4 canali APU:
 - **Livello** (alto sx): 3 sprite OAM 23-25, asset `level.png` (glifi L, 0-9). Base VRAM allineata a indice **pari** (8x16 hardware ignora LSB). `-keep_duplicate_tiles` per ordine prevedibile. Nascosto durante game over.
 
 ### 3.9 Progressione livelli
-- **8 livelli** con difficoltà crescente:
+- **Livelli** con difficoltà crescente:
   - Maze: 7×7 → 21×21 (+2/livello).
   - Nemici: 1 → 8 (+1/livello).
   - Cooldown fantasma: 60 → 11 frame.
   - Ricarica stamina: 60 → 144 frame/pt.
   - Nebbia: 5×5 → 3×3 (dal L7).
 - **Sconfitta**: ricomincia dallo stesso livello (non azzera).
-- **Livello 8 superato**: `game_over = 3` (finale tragico) invece di 2.
+- **Ultimo livello superato**: `game_over = 3` (finale) invece di 2.
 
 ### 3.10 Schermate
 - **Title**: `title_bg.png` (160×144, 2-bit) + musica.
@@ -160,4 +160,4 @@ Verificato via PyBoy: dimensioni 7→21, nemici 1→8, cooldown 60→11, recharg
 
 ## 7. Conclusione
 
-"A Scream from the Dark" è un survival-horror completo per Game Boy: 8 livelli di difficoltà crescente, multi-nemico, corsa e salto con stamina, fog of war scalabile, audio polifonico procedurale (4 tracce + SFX), finale tragico con musica dedicata — tutto in 32 KB di ROM e ~3 KB di WRAM. Il codice è modulare, commentato in italiano, e rappresenta un caso di studio su come tradurre feature "moderne" in matematica a punto fisso e gestione diretta dei registri hardware del Game Boy.
+"A Scream from the Dark" è un survival-horror completo per Game Boy: livelli di difficoltà crescente, multi-nemico, corsa e salto con stamina, fog of war scalabile, audio polifonico procedurale (4 tracce + SFX), finale con musica dedicata — tutto in 32 KB di ROM e ~3 KB di WRAM. Il codice è modulare, commentato in italiano, e rappresenta un caso di studio su come tradurre feature "moderne" in matematica a punto fisso e gestione diretta dei registri hardware del Game Boy.

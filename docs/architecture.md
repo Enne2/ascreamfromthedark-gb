@@ -2,7 +2,7 @@
 
 ## Overview
 
-Il progetto è un gioco completo per Game Boy (DMG/CGB) con 8 livelli di difficoltà crescente, multi-nemico, audio polifonico e finale tragico. Tutto in 32 KB di ROM e 8 KB di WRAM.
+Il progetto è un gioco completo per Game Boy (DMG/CGB) con livelli di difficoltà crescente, multi-nemico, audio polifonico e finale. Tutto in 32 KB di ROM e 8 KB di WRAM.
 
 ## Organizzazione del progetto
 

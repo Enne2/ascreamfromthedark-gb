@@ -26,8 +26,8 @@ if (dist == fog_radius) -> tile scuro     // anello di penombra
 if (dist <  fog_radius) -> tile normale   // zona illuminata
 ```
 
-- **Livelli 1-6**: `fog_radius = 2` → finestra 5×5.
-- **Livelli 7-8**: `fog_radius = 1` → finestra 3×3 (nebbia più stretta, più difficoltà).
+- **Livelli iniziali**: `fog_radius = 2` → finestra 5×5.
+- **Livelli avanzati**: `fog_radius = 1` → finestra 3×3 (nebbia più stretta, più difficoltà).
 
 Il nemico si attiva e viene renderizzato solo se entro `fog_radius`, coerente con la nebbia.
 

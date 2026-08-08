@@ -25,10 +25,10 @@ Crediti visibili anche nel gioco: schermata **SELECT** dal menu titolo.
 - **DAS**: controlli alla Tetris — delay 12 frame, repeat 6 (walk) / 2 (run).
 - **Salto evasivo**: A+direzione, 2 tile, costa 60 stamina (salto sicuro). Sotto 60 stamina il salto è rischioso: probabilità di caduta nel vuoto proporzionale alla stamina mancante. Arco parabolico visivo.
 - **Corsa**: B+direzione, 8 frame/tile, 10 stamina/tile. Fallback a camminata se stamina < 10.
-- **Progressione 8 livelli**: difficoltà crescente (maze, nemici, cooldown, stamina, nebbia). Indicatore `L<n>` in alto a sinistra. Sconfitta → ricomincia dallo stesso livello.
+- **Progressione a livelli crescenti**: difficoltà crescente (maze, nemici, cooldown, stamina, nebbia). Indicatore `L<n>` in alto a sinistra. Sconfitta → ricomincia dallo stesso livello.
 - **Multi-nemico**: fino a 8 fantasmi (1 per livello). AI greedy, cooldown scalabile (60→11 frame), hitbox pixel-perfect.
 - **Audio procedurale**: 4 canali APU via VBL interrupt. Title (128 note, 3 canali), gameplay (96), gameover (128), finale dedicato (192, loop).
-- **Schermate**: title con sfondo 2-bit, death testuale con font IBM, Going Deeper testuale, finale tragico con font IBM.
+- **Schermate**: title con sfondo 2-bit, death testuale con font IBM, Going Deeper testuale, finale con font IBM.
 - **Test headless**: PyBoy + OpenCV + ROM di test isolate.
 
 ### Soundtrack

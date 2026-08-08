@@ -4,7 +4,7 @@ Benvenuto nella documentazione tecnica di **A Scream from the Dark**, un surviva
 
 ## Il gioco in breve
 
-Sei imprigionato in un labirinto generato casualmente, illuminato solo da un ristretto quadrato di visibilità. Un **fantasma** si nasconde nel buio e ti bracca. L'unica via di fuga è una **botola** posta lontano dalla partenza: raggiungerla significa sprofondare più giù (*Going Deeper*) e affrontare un livello più grande e più difficile. Dopo **8 livelli** il gioco finisce con un **finale tragico**.
+Sei imprigionato in un labirinto generato casualmente, illuminato solo da un ristretto quadrato di visibilità. Un **fantasma** si nasconde nel buio e ti bracca. L'unica via di fuga è una **botola** posta lontano dalla partenza: raggiungerla significa sprofondare più giù (*Going Deeper*) e affrontare un livello più grande e più difficile. Dopo una serie di livelli sempre più profondi, il gioco finisce con un **finale**.
 
 ## Indice dei Capitoli
 
@@ -14,7 +14,7 @@ Sei imprigionato in un labirinto generato casualmente, illuminato solo da un ris
 
 3. **[Generazione Procedurale del Livello](generation.md)** — DFS con stack WRAM, creazione di loop, posizionamento della botola, dimensioni crescenti.
 
-4. **[Fisica e Controlli del Giocatore](gameplay.md)** — DAS, state machine, camminata, corsa (B+direzione), salto evasivo, stamina, progressione livelli, finale tragico.
+4. **[Fisica e Controlli del Giocatore](gameplay.md)** — DAS, state machine, camminata, corsa (B+direzione), salto evasivo, stamina, progressione livelli, finale.
 
 5. **[Intelligenza Artificiale (Fantasmi)](ai.md)** — Multi-entity (fino a 8 fantasmi), pathfinding greedy, cooldown scalabile, hitbox pixel-perfect.
 

@@ -37,7 +37,7 @@ Battito ritmico ansioso ("eerie pulse") in La minore → Re minore → Mi7. 20 f
 Concerto tragico polifonico. 16 accordi con intensificazione (arpeggi più alti nella seconda metà). Noise percussion: thud basso (NR43=0x68) per la prima metà, crash acuto (NR43=0x42) per la seconda. 10 frame/nota.
 
 ### Finale (192 note, CH1+CH2+CH4, ~45 sec, loop)
-Brano dedicato per il finale tragico (livello 8). Lamento discendente in Re minore:
+Brano dedicato per il finale. Lamento discendente in Re minore:
 - **CH1**: melodia sommessa (NR12=0xA2, fade lungo).
 - **CH2**: basso profondo (NR22=0xD1, fade lentissimo).
 - **CH4**: rintocco medio (0x68) di default, crash (0x42) al climax (step 80/88/112), tonfo profondo (0x70) nell'abisso (step ≥160).
