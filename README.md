@@ -1,6 +1,18 @@
 # A Scream from the Dark
 
-Un survival-horror procedurale in prospettiva isometrica per Game Boy (DMG/CGB), scritto in C con **GBDK-2020**. Sei imprigionato in un labirinto generato casualmente, illuminato solo da un ristretto quadrato di visibilità. Dei **fantasmi** si nascondono nel buio e ti braccano. L'unica via di fuga è una **botola** posta lontano dalla partenza: raggiungerla significa "sprofondare più giù" (*Going Deeper*) e affrontare un livello più grande, con più nemici e meno visibilità. Dopo **8 livelli** il gioco finisce con un **finale tragico**.
+<p align="center">
+  <img src="assets/title_bg.png" alt="Title screen" width="320">
+</p>
+
+Un survival-horror procedurale in prospettiva isometrica per Game Boy (DMG/CGB), scritto in C con **GBDK-2020**. Sei imprigionato in un labirinto generato casualmente, illuminato solo da un ristretto quadrato di visibilità. Dei **fantasmi** si nascondono nel buio e ti braccano. L'unica via di fuga è una **botola** posta lontano dalla partenza: raggiungerla significa "sprofondare più giù" (*Going Deeper*) e affrontare un livello più grande, con più nemici e meno visibilità.
+
+---
+
+## Autore
+
+**Matteo Benedetto** — [me@enne2.net](mailto:me@enne2.net)
+
+Crediti visibili anche nel gioco: schermata **SELECT** dal menu titolo.
 
 ---
 
@@ -13,7 +25,7 @@ Un survival-horror procedurale in prospettiva isometrica per Game Boy (DMG/CGB),
 - **DAS**: controlli alla Tetris — delay 12 frame, repeat 6 (walk) / 2 (run).
 - **Salto evasivo**: A+direzione, 2 tile, costa 60 stamina (salto sicuro). Sotto 60 stamina il salto è rischioso: probabilità di caduta nel vuoto proporzionale alla stamina mancante. Arco parabolico visivo.
 - **Corsa**: B+direzione, 8 frame/tile, 10 stamina/tile. Fallback a camminata se stamina < 10.
-- **Progressione 8 livelli + finale**: difficoltà crescente (maze, nemici, cooldown, stamina, nebbia). Indicatore `L<n>` in alto a sinistra. Sconfitta → ricomincia dallo stesso livello. Livello 8 → finale tragico.
+- **Progressione 8 livelli**: difficoltà crescente (maze, nemici, cooldown, stamina, nebbia). Indicatore `L<n>` in alto a sinistra. Sconfitta → ricomincia dallo stesso livello.
 - **Multi-nemico**: fino a 8 fantasmi (1 per livello). AI greedy, cooldown scalabile (60→11 frame), hitbox pixel-perfect.
 - **Audio procedurale**: 4 canali APU via VBL interrupt. Title (128 note, 3 canali), gameplay (96), gameover (128), finale dedicato (192, loop).
 - **Schermate**: title con sfondo 2-bit, death testuale con font IBM, Going Deeper testuale, finale tragico con font IBM.
@@ -33,7 +45,7 @@ Un survival-horror procedurale in prospettiva isometrica per Game Boy (DMG/CGB),
 
 ### Architettura dei file
 - [`main.c`](src/main.c): entry point, loop VBL, `app_state` (0=title, 1=game).
-- [`engine.c`](src/engine.c): orchestrazione, game-over branches (sconfitta/vittoria/finale).
+- [`engine.c`](src/engine.c): orchestrazione, game-over branches (sconfitta/vittoria).
 - [`globals.c`](src/globals.c) / [`globals.h`](src/globals.h): stato globale (mappa `[21][21]`, `map_size`, `fog_radius`, `level`, `num_enemies`, enemy arrays[8], stamina, ecc.).
 - [`maze.c`](src/maze.c): DFS + loop + botola. Array statici in WRAM.
 - [`player_logic.c`](src/player_logic.c): DAS, camminata, corsa, salto, stamina.
@@ -67,7 +79,13 @@ Sito documentazione (MkDocs): `mkdocs serve` in locale, deploy automatico su Git
 ```bash
 make clean && make
 ```
-Output: `build/hello_iso.gb` (32 KB) + `build/test_gameover.gb` + `build/test_finale.gb`.
+Output: `build/hello_iso.gb` (32 KB) + `build/test_gameover.gb`.
+
+Puoi rinominare il ROM principale con `make release`:
+```bash
+make release
+# Crea build/"AScreamFromTheDark.gb"
+```
 
 ---
 

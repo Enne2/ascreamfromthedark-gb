@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>A Scream from the Dark — WebAssembly Game Boy</title>
+    <style>
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html, body {
+            margin: 0;
+            padding: 0;
+            background-color: #0a0a0f;
+            color: #e0e0e0;
+            font-family: 'Courier New', monospace;
+            overflow-x: hidden;
+            touch-action: manipulation;
+        }
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        h1 {
+            color: #c41e3a;
+            text-shadow: 2px 2px 0 #000, 0 0 20px rgba(196, 30, 58, 0.5);
+            font-size: 1.6em;
+            letter-spacing: 2px;
+            margin: 0 0 6px 0;
+            text-align: center;
+        }
+        h2 {
+            color: #8b0000;
+            font-size: 0.75em;
+            font-weight: normal;
+            font-style: italic;
+            margin: 0 0 16px 0;
+            text-align: center;
+        }
+        canvas {
+            background-color: #000;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            width: min(520px, 100%);
+            height: auto;
+            aspect-ratio: 10 / 9;
+            border: 4px solid #2a2a2a;
+            border-radius: 4px;
+            box-shadow: 0 0 30px rgba(196, 30, 58, 0.3),
+                        inset 0 0 20px rgba(0,0,0,0.5);
+            display: block;
+        }
+        .controls {
+            margin-top: 16px;
+            background: #1a1a1a;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-size: 12px;
+            line-height: 1.6;
+            text-align: center;
+            border: 1px solid #2a2a2a;
+        }
+        .key {
+            background: #2a2a2a;
+            color: #c41e3a;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-family: monospace;
+            font-weight: bold;
+            border: 1px solid #3a3a3a;
+        }
+
+        /* ============================================
+           MOBILE / TOUCH CONTROLS
+           Visible on screens narrower than 700px OR
+           when device has coarse pointer (touch).
+           ============================================ */
+        #mobile-controls {
+            display: none;
+            margin-top: 4vh;
+            width: min(540px, 100%);
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 2.5vh;
+        }
+        @media (max-width: 700px), (pointer: coarse) {
+            #mobile-controls { display: flex; }
+            .controls { display: none; }
+            body { padding: 14px; justify-content: flex-start; }
+            h1 { font-size: 1.25em; margin-bottom: 4px; }
+            h2 { display: none; }
+            .footer { font-size: 10px; margin-top: 3vh; }
+        }
+
+        /* Base touch button */
+        .tbtn {
+            background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%);
+            color: #c41e3a;
+            border: 2px solid #3a3a3a;
+            border-radius: 12px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            font-size: clamp(16px, 5vw, 22px);
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.05s, background 0.05s, border-color 0.05s, box-shadow 0.05s;
+            box-shadow: 0 4px 0 #000, inset 0 1px 0 rgba(255,255,255,0.05);
+            min-width: 0;
+            min-height: 0;
+        }
+        .tbtn.pressed,
+        .tbtn:active {
+            background: linear-gradient(180deg, #c41e3a 0%, #8b0000 100%);
+            color: #fff;
+            border-color: #c41e3a;
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #000, inset 0 1px 0 rgba(255,255,255,0.2);
+        }
+
+        /* Row that holds dpad + A/B side-by-side on wider phones, stacked on tiny screens */
+        .ctrl-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            width: 100%;
+            gap: 16px;
+            padding: 0 12px;
+        }
+
+        /* D-pad: cross layout, thumb-sized */
+        .dpad {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: 1fr 1fr 1fr;
+            gap: 2px;
+            width: clamp(140px, 38vw, 190px);
+            height: clamp(140px, 38vw, 190px);
+        }
+        .dpad .tbtn {
+            border-radius: 8px;
+        }
+        .d-up    { grid-column: 2; grid-row: 1; }
+        .d-left  { grid-column: 1; grid-row: 2; }
+        .d-right { grid-column: 3; grid-row: 2; }
+        .d-down  { grid-column: 2; grid-row: 3; }
+        .d-center {
+            grid-column: 2; grid-row: 2;
+            background: transparent;
+            border: none;
+            box-shadow: none;
+        }
+
+        /* A/B action buttons */
+        .actions {
+            display: flex;
+            gap: clamp(8px, 3vw, 16px);
+            align-items: flex-end;
+        }
+        .actions .tbtn {
+            width: clamp(56px, 17vw, 76px);
+            height: clamp(56px, 17vw, 76px);
+            border-radius: 50%;
+            font-size: clamp(18px, 6vw, 26px);
+        }
+        .btn-b { transform: rotate(-12deg); }
+        .btn-b.pressed, .btn-b:active { transform: rotate(-12deg) translateY(3px); }
+        .btn-a { transform: rotate(12deg); }
+        .btn-a.pressed, .btn-a:active { transform: rotate(12deg) translateY(3px); }
+
+        /* Start / Select pill buttons */
+        .sys {
+            display: flex;
+            gap: clamp(10px, 4vw, 24px);
+            align-items: center;
+        }
+        .sys .tbtn {
+            min-width: 78px;
+            width: clamp(78px, 22vw, 110px);
+            height: clamp(30px, 8vw, 40px);
+            border-radius: 20px;
+            font-size: clamp(10px, 3vw, 13px);
+            letter-spacing: 1px;
+            padding: 0 12px;
+        }
+
+        /* Tiny screens: stack A/B below dpad if side-by-side doesn't fit */
+        @media (max-width: 360px) {
+            .ctrl-row { flex-direction: column; align-items: center; gap: 18px; }
+        }
+
+        /* Landscape phone: single row with controls on sides */
+        @media (orientation: landscape) and (max-height: 500px) {
+            body { justify-content: center; padding: 8px; }
+            h1 { font-size: 1em; }
+            #game-container { flex-direction: row; gap: 16px; align-items: center; }
+            canvas { width: min(55vh, 60vw); height: auto; }
+            #mobile-controls { flex-direction: row; width: auto; gap: 18px; margin-top: 0; }
+            .ctrl-row { flex-direction: row; width: auto; padding: 0; gap: 10px; }
+            .dpad { width: 120px; height: 120px; }
+            .actions .tbtn { width: 52px; height: 52px; }
+            .sys { flex-direction: column; }
+            .btn-fs { display: none; }
+            .footer { display: none; }
+        }
+
+        /* Fullscreen & helpers */
+        .btn-fs {
+            margin-top: 12px;
+            background: #1a1a1a;
+            color: #c41e3a;
+            border: 1px solid #2a2a2a;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-family: monospace;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .btn-fs:hover { background: #2a2a2a; color: #fff; }
+
+        #game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        #game-container:fullscreen {
+            width: 100vw;
+            height: 100vh;
+            background-color: #0a0a0f;
+            padding: 20px;
+            gap: 20px;
+        }
+        #game-container:fullscreen canvas {
+            width: 80vmin;
+            height: 72vmin;
+            max-width: 100%;
+            max-height: 70vh;
+        }
+
+        .footer {
+            margin-top: 24px;
+            text-align: center;
+            color: #555;
+            font-size: 11px;
+        }
+        .footer a { color: #c41e3a; text-decoration: none; }
+        .footer a:hover { text-decoration: underline; }
+
+    </style>
+</head>
+<body>
+
+    <h1>A SCREAM FROM THE DARK</h1>
+
+    <div id="game-container">
+        <canvas id="gameboy"></canvas>
+
+        <button class="btn-fs" id="btn-fullscreen">⛶ Schermo Intero</button>
+
+        <div id="mobile-controls">
+            <!-- Start / Select (sopra) -->
+            <div class="sys" aria-label="System buttons">
+                <button class="tbtn" data-key="Enter"  id="btn-start"  aria-label="Start">START</button>
+                <button class="tbtn" data-key="Shift"  id="btn-select" aria-label="Select">SELECT</button>
+            </div>
+
+            <!-- D-pad + A/B su una riga -->
+            <div class="ctrl-row">
+                <div class="dpad" aria-label="Directional pad">
+                    <button class="tbtn d-up"    data-key="ArrowUp"    aria-label="Su">▲</button>
+                    <button class="tbtn d-left"  data-key="ArrowLeft"  aria-label="Sinistra">◀</button>
+                    <div class="d-center"></div>
+                    <button class="tbtn d-right" data-key="ArrowRight" aria-label="Destra">▶</button>
+                    <button class="tbtn d-down"  data-key="ArrowDown"  aria-label="Giù">▼</button>
+                </div>
+
+                <div class="actions" aria-label="Action buttons">
+                    <button class="tbtn btn-b" data-key="Backspace" id="btn-b" aria-label="B (corsa)">B</button>
+                    <button class="tbtn btn-a" data-key="z"          id="btn-a" aria-label="A (salto)">A</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls" id="keyboard-controls">
+        <strong>Comandi Tastiera:</strong>
+        <span class="key">↑↓←→</span> muovi ·
+        <span class="key">Z</span> A (salto) ·
+        <span class="key">Backspace</span> B (corsa) ·
+        <span class="key">Enter</span> Start ·
+        <span class="key">Shift</span> Select
+    </div>
+
+    <div class="footer">
+        <a href="https://github.com/Enne2/ascreamfromthedark-gb">Codice sorgente</a> ·
+        <a href="https://git.enne2.net/enne2/ascreamfromthedark-gb">Mirror Gitea</a> ·
+        GB © 1989 Nintendo · Questo gioco è un homebrew non ufficiale
+    </div>
+
+    <script src="wasmboy.wasm.iife.js"></script>
+    <script>
+        const canvas = document.getElementById('gameboy');
+        const wasmBoyObj = WasmBoy.WasmBoy || WasmBoy;
+
+        wasmBoyObj.setCanvas(canvas);
+
+        fetch('AScreamFromTheDark.gb')
+            .then(res => res.arrayBuffer())
+            .then(romBuffer => {
+                console.log('ROM caricata, avvio emulatore...');
+                return wasmBoyObj.loadROM(new Uint8Array(romBuffer));
+            })
+            .then(() => {
+                console.log('Avvio...');
+                return wasmBoyObj.play();
+            })
+            .catch(err => {
+                console.error('Errore:', err);
+            });
+
+        /* ============================================
+           Universal button binder (data-key driven)
+           - Touch: synthetic keydown/keyup events
+           - Mouse: same
+           - Visual feedback: .pressed class
+           - Multi-touch: each button tracks its own state
+           ============================================ */
+        const KEY_CODE = {
+            'ArrowUp':'ArrowUp','ArrowDown':'ArrowDown','ArrowLeft':'ArrowLeft','ArrowRight':'ArrowRight',
+            'z':'KeyZ','Z':'KeyZ',
+            'Backspace':'Backspace',
+            'Enter':'Enter','enter':'Enter',
+            'Shift':'ShiftLeft','Tab':'Tab'
+        };
+        const KEY_KEY = {
+            'ArrowUp':'ArrowUp','ArrowDown':'ArrowDown','ArrowLeft':'ArrowLeft','ArrowRight':'ArrowRight',
+            'z':'z','Z':'z',
+            'Backspace':'Backspace',
+            'Enter':'Enter','enter':'Enter',
+            'Shift':'Shift','Tab':'Tab'
+        };
+        // keyCode legacy — WasmBoy controlla questo per mappare i tasti GB.
+        // Mappature WasmBoy reali (dal codice del bundle):
+        //   A      = Z (90)
+        //   B      = Backspace (8), Esc (27), apostrofo (222)
+        //   Start  = Enter (13), Space (32)
+        //   Select = Shift (16), Tab (9), backslash (220)
+        const KEY_KEYCODE = {
+            'ArrowUp':38,'ArrowDown':40,'ArrowLeft':37,'ArrowRight':39,
+            'z':90,'Z':90,
+            'Backspace':8,
+            'Enter':13,'enter':13,
+            'Shift':16,'Tab':9
+        };
+
+        function dispatchKey(type, dataKey) {
+            // WasmBoy ascolta keydown/keyup su WINDOW (non su document),
+            // usando il code fisico (ArrowUp, KeyZ, KeyX, Enter, Space, ecc.)
+            const ev = new KeyboardEvent(type, {
+                key: KEY_KEY[dataKey] || dataKey,
+                code: KEY_CODE[dataKey] || dataKey,
+                keyCode: KEY_KEYCODE[dataKey] || 0,
+                which: KEY_KEYCODE[dataKey] || 0,
+                bubbles: true,
+                cancelable: true,
+                composed: true
+            });
+            // Dispatch su WINDOW (dove WasmBoy ascolta) E su document come fallback
+            window.dispatchEvent(ev);
+            document.dispatchEvent(ev);
+        }
+
+        document.querySelectorAll('.tbtn[data-key]').forEach(btn => {
+            const dataKey = btn.dataset.key;
+            let pressed = false;
+            const press = (e) => {
+                if (e) { e.preventDefault(); e.stopPropagation(); }
+                if (pressed) return;
+                pressed = true;
+                btn.classList.add('pressed');
+                dispatchKey('keydown', dataKey);
+            };
+            const release = (e) => {
+                if (e) { e.preventDefault(); e.stopPropagation(); }
+                if (!pressed) return;
+                pressed = false;
+                btn.classList.remove('pressed');
+                dispatchKey('keyup', dataKey);
+            };
+            // Touch (primary)
+            btn.addEventListener('touchstart', press, { passive: false });
+            btn.addEventListener('touchend',   release, { passive: false });
+            btn.addEventListener('touchcancel',release, { passive: false });
+            // Mouse (fallback per emulatori desktop e testing)
+            btn.addEventListener('mousedown',  press);
+            btn.addEventListener('mouseup',    release);
+            btn.addEventListener('mouseleave', release);
+            // Keyboard accessibility (Enter/Space su button = click = simulate tap)
+            btn.addEventListener('click', e => e.preventDefault()); // niente click reale
+        });
+
+        // Prevent default for arrow keys (avoid page scroll on Space/Arrows)
+        window.addEventListener('keydown', e => {
+            if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' ','Backspace','Tab'].includes(e.key)) e.preventDefault();
+        }, { passive: false });
+
+        /* Fullscreen toggle */
+        const gameContainer = document.getElementById('game-container');
+        const fsButton = document.getElementById('btn-fullscreen');
+        fsButton.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                gameContainer.requestFullscreen().then(() => {
+                    fsButton.innerHTML = '✕ Esci Fullscreen';
+                }).catch(err => console.error(`Errore fullscreen: ${err.message}`));
+            } else {
+                document.exitFullscreen().then(() => {
+                    fsButton.innerHTML = '⛶ Schermo Intero';
+                });
+            }
+        });
+        document.addEventListener('fullscreenchange', () => {
+            fsButton.innerHTML = document.fullscreenElement ? '✕ Esci Fullscreen' : '⛶ Schermo Intero';
+        });
+    </script>
+</body>
+</html>

@@ -22,6 +22,10 @@ all: $(BUILD_DIR)/hello_iso.gb $(BUILD_DIR)/test_gameover.gb $(BUILD_DIR)/test_f
 # normal build never rewrites the working tree as a side effect.
 assets: generate_c_assets
 
+# Rename the main ROM to match the game title
+release: all
+	cp $(BUILD_DIR)/hello_iso.gb $(BUILD_DIR)/"AScreamFromTheDark.gb"
+
 # Generate image assets
 generate_images: $(SCRIPTS_DIR)/generate_assets.py $(SCRIPTS_DIR)/generate_enemy.py $(SCRIPTS_DIR)/generate_level.py $(SCRIPTS_DIR)/generate_tiling_parts.py
 	cd $(ASSETS_DIR) && $(PYTHON) ../$(SCRIPTS_DIR)/generate_assets.py
