@@ -14,7 +14,12 @@ assets/finale_music.txt
 # Compiled ROMs
 *.gb
 
+# Build directory (ROMs, maps, test artifacts)
+build/
+
+# Archived assets (local only, not versioned)
+assets/wip/
+
 # Python caches
 __pycache__/
 *.pyc
-assets/claimed.png

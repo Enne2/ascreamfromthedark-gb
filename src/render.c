@@ -9,6 +9,81 @@
 #include "stamina.h"
 #include "level.h"
 #include "maze.h"
+#include "tiling_parts.h"
+
+// Scratch macro-tile used only by draw_map(). Keeping it in WRAM avoids a
+// temporary 8-byte array on the small SM83 hardware stack.
+static uint8_t macro_tiles[8];
+
+// Bounds isometrici non wrappati dell'ultimo frame composto. Servono a
+// trasferire l'unione fra area vecchia (da cancellare) e nuova (da mostrare).
+static uint8_t map_cache_valid = 0;
+static int8_t previous_left;
+static int8_t previous_right;
+static int8_t previous_top;
+static int8_t previous_bottom;
+
+void reset_map_render_cache(void) {
+    map_cache_valid = 0;
+}
+
+static void flush_map_segment(uint8_t x, uint8_t y, uint8_t width, uint8_t height) {
+    if (width && height) {
+        set_bkg_submap(
+            x,
+            y,
+            width,
+            height,
+            map_buffer,
+            32
+        );
+    }
+}
+
+// Converte un rettangolo in coordinate isometriche assolute in al massimo
+// quattro rettangoli fisici, rispettando il wrap 32x32 della tilemap hardware.
+static void flush_wrapped_map_rect(int8_t left, int8_t top, uint8_t width, uint8_t height) {
+    uint8_t x = ((uint8_t)left) & 31;
+    uint8_t y = ((uint8_t)top) & 31;
+    uint8_t first_width = width;
+    uint8_t first_height = height;
+
+    if (first_width > (uint8_t)(32 - x)) first_width = 32 - x;
+    if (first_height > (uint8_t)(32 - y)) first_height = 32 - y;
+
+    flush_map_segment(x, y, first_width, first_height);
+    flush_map_segment(0, y, width - first_width, first_height);
+    flush_map_segment(x, 0, first_width, height - first_height);
+    flush_map_segment(0, 0, width - first_width, height - first_height);
+}
+
+// Pulisce nel buffer WRAM lo stesso rettangolo circolare usato dalla tilemap.
+// La larghezza dei bounds del fog e' sempre <= 32, quindi ogni riga richiede
+// al massimo due memset quando attraversa il bordo destro.
+static void clear_wrapped_buffer_rect(int8_t left, int8_t top, uint8_t width, uint8_t height) {
+    uint8_t x = ((uint8_t)left) & 31;
+    uint8_t first_width = width;
+    if (first_width > (uint8_t)(32 - x)) first_width = 32 - x;
+
+    for (uint8_t row = 0; row < height; row++) {
+        uint8_t y = (((uint8_t)top) + row) & 31;
+        uint16_t row_offset = (uint16_t)y * 32;
+        memset(&map_buffer[row_offset + x], 0, first_width);
+        if (width > first_width) {
+            memset(&map_buffer[row_offset], 0, width - first_width);
+        }
+    }
+}
+
+static void write_macro_tiles(int8_t iso_x, int8_t iso_y) {
+    for (uint8_t y = 0; y < 2; y++) {
+        for (uint8_t x = 0; x < 4; x++) {
+            uint8_t target_x = (iso_x + x) & 31;
+            uint8_t target_y = (iso_y + y) & 31;
+            map_buffer[(uint16_t)target_y * 32 + target_x] = macro_tiles[y * 4 + x];
+        }
+    }
+}
 
 uint8_t get_tile_state(int8_t cx, int8_t cy, int8_t lx, int8_t ly) {
     if (lx < 0 || (uint8_t)lx >= map_size || ly < 0 || (uint8_t)ly >= map_size) return 0;
@@ -56,9 +131,9 @@ void update_stamina_display(void) {
     uint16_t temp = (uint16_t)stamina * 40;
     uint8_t num_pixels = temp / 100;
     
-    // Offset di base nella VRAM dove sono caricati i tile della stamina
-    // Caricato a partire da tiles_TILE_COUNT per non sovrascrivere la VRAM condivisa (>=128)
-    uint8_t base_tile = tiles_TILE_COUNT;
+    // Base pari dedicata: in modalita' 8x16 il Game Boy forza a zero il bit
+    // basso dell'indice tile dello sprite.
+    uint8_t base_tile = STAMINA_SPRITE_BASE;
     
     for (uint8_t i = 0; i < 5; i++) {
         uint8_t tile_idx;
@@ -86,8 +161,8 @@ void update_stamina_display(void) {
  *    e' scrollato isometricamente e non e' adatto a un HUD fisso. Gli sprite sono
  *    coordinate-schermo fisse, indipendenti dallo scroll.
  * 2. L'asset `level.png` contiene 12 glifi 8x16 (blank, 'L', '0'..'9'), caricati in
- *    VRAM sprite subito dopo i tile della stamina (base = tiles_TILE_COUNT +
- *    stamina_TILE_COUNT) per evitare sovrapposizioni con i tile del background
+ *    VRAM sprite subito dopo i tile della stamina per evitare sovrapposizioni
+ *    con i tile del background
  *    (stesso workaround del commit 93deb35 per la VRAM condivisa).
  * 3. Si mostrano 3 sprite: 'L', decine (blank se livello < 10), unita'.
  *    Viene nascosto durante il game over (sconfitta/vittoria) e sul titolo.
@@ -143,9 +218,6 @@ void update_level_display(void) {
  *    per disegnare bordi e variazioni grafiche (usando bit masking `(has_tl ? 1 : 0) | ...`).
  */
 void draw_map(uint8_t center_x, uint8_t center_y) {
-    // Svuotiamo l'intero buffer della mappa con l'indice 0 (casella nera vuota)
-    memset(map_buffer, 0, sizeof(map_buffer));
-    
     // Calcoliamo la "finestra" di mappa (2r+1 x 2r+1) da processare (fog_radius)
     int8_t start_x = center_x - fog_radius;
     if (start_x < 0) start_x = 0;
@@ -156,6 +228,23 @@ void draw_map(uint8_t center_x, uint8_t center_y) {
     if (start_y < 0) start_y = 0;
     int8_t end_y = center_y + fog_radius;
     if ((uint8_t)end_y >= map_size) end_y = map_size - 1;
+
+    int8_t current_left = (start_x - end_y) * 2 + 12;
+    int8_t current_right = (end_x - start_y) * 2 + 15;
+    int8_t current_top = start_x + start_y + 2;
+    int8_t current_bottom = end_x + end_y + 3;
+
+    if (map_cache_valid) {
+        clear_wrapped_buffer_rect(
+            previous_left,
+            previous_top,
+            (uint8_t)(previous_right - previous_left + 1),
+            (uint8_t)(previous_bottom - previous_top + 1)
+        );
+    } else {
+        // Il primo frame parte da uno stato WRAM interamente noto.
+        memset(map_buffer, 0, sizeof(map_buffer));
+    }
     
     // Processiamo la mappa in DUE passate per risolvere il problema dell'overlapping isometrico.
     // L'engine disegna da Nord a Sud. I tile a Sud sovrascrivono la metà inferiore dei tile a Nord.
@@ -183,85 +272,94 @@ void draw_map(uint8_t center_x, uint8_t center_y) {
 
                 uint8_t state_tl = get_tile_state(center_x, center_y, lx - 1, ly);
                 uint8_t state_tr = get_tile_state(center_x, center_y, lx, ly - 1);
-                uint8_t mask = state_tl + state_tr * 3;
+                uint8_t group = is_alt + ((dist == (int8_t)fog_radius) ? 2 : 0);
+                const uint8_t *parts = floor_parts[group];
+                uint8_t tl_offset = state_tl * 2;
+                uint8_t tr_offset = 6 + state_tr * 2;
 
-                uint8_t v;
-                if (dist == (int8_t)fog_radius) {
-                    v = is_alt ? (27 + mask) : (18 + mask);
-                } else {
-                    v = is_alt ? (9 + mask) : mask;
-                }
-
-                for (uint8_t y = 0; y < 2; y++) {
-                    for (uint8_t x = 0; x < 4; x++) {
-                        uint8_t target_x = (iso_x + x) & 31;
-                        uint8_t target_y = (iso_y + y) & 31;
-                        uint8_t src_tile = tiles_map[4 + v * 8 + y * 4 + x];
-                        map_buffer[target_y * 32 + target_x] = src_tile;
-                    }
-                }
+                macro_tiles[0] = parts[tl_offset];
+                macro_tiles[1] = parts[tl_offset + 1];
+                macro_tiles[2] = parts[tr_offset];
+                macro_tiles[3] = parts[tr_offset + 1];
+                macro_tiles[4] = parts[12];
+                macro_tiles[5] = parts[13];
+                macro_tiles[6] = parts[14];
+                macro_tiles[7] = parts[15];
+                write_macro_tiles(iso_x, iso_y);
             }
         }
     }
 
-    // Passata 2: Scala della Vittoria (disegnata sempre sopra)
-    for (int8_t ly = start_y; ly <= end_y; ly++) {
-        for (int8_t lx = start_x; lx <= end_x; lx++) {
-            if (maze[ly][lx] == 2) {
-                int8_t dx = lx - center_x;
-                int8_t dy = ly - center_y;
-                if (dx < 0) dx = -dx;
-                if (dy < 0) dy = -dy;
-                int8_t dist = (dx > dy) ? dx : dy;
+    // Passata 2: la botola e' unica e le sue coordinate sono gia' note.
+    // Disegnarla direttamente conserva l'overlay finale evitando di scandire
+    // una seconda volta l'intera finestra del fog.
+    int8_t lx = (int8_t)stairs_lx;
+    int8_t ly = (int8_t)stairs_ly;
+    if (lx >= start_x && lx <= end_x && ly >= start_y && ly <= end_y && maze[ly][lx] == 2) {
+        int8_t dx = lx - center_x;
+        int8_t dy = ly - center_y;
+        if (dx < 0) dx = -dx;
+        if (dy < 0) dy = -dy;
+        int8_t dist = (dx > dy) ? dx : dy;
 
-                if (dist > (int8_t)fog_radius) continue;
+        int8_t iso_x = (lx - ly) * 2 + 12;
+        int8_t iso_y = (lx + ly) * 1 + 2;
+        uint8_t is_alt = ((lx + ly) % 2 == 0);
 
-                int8_t iso_x = (lx - ly) * 2 + 12;
-                int8_t iso_y = (lx + ly) * 1 + 2;
-                uint8_t is_alt = ((lx + ly) % 2 == 0);
+        uint8_t state_tl = get_tile_state(center_x, center_y, lx - 1, ly);
+        uint8_t state_tr = get_tile_state(center_x, center_y, lx, ly - 1);
+        uint8_t state_bl = get_tile_state(center_x, center_y, lx, ly + 1);
+        uint8_t state_br = get_tile_state(center_x, center_y, lx + 1, ly);
 
-                uint8_t state_tl = get_tile_state(center_x, center_y, lx - 1, ly);
-                uint8_t state_tr = get_tile_state(center_x, center_y, lx, ly - 1);
-                uint8_t state_bl = get_tile_state(center_x, center_y, lx, ly + 1);
-                uint8_t state_br = get_tile_state(center_x, center_y, lx + 1, ly);
-                
-                uint16_t mask = state_tl + state_tr * 3 + state_bl * 9 + state_br * 27;
+        uint8_t group = is_alt + ((dist == (int8_t)fog_radius) ? 2 : 0);
+        const uint8_t *parts = hatch_parts[group];
+        uint8_t tl_offset = state_tl * 2;
+        uint8_t tr_offset = 6 + state_tr * 2;
+        uint8_t bl_offset = 12 + state_bl * 2;
+        uint8_t br_offset = 18 + state_br * 2;
 
-                uint16_t v;
-                if (dist == (int8_t)fog_radius) {
-                    v = is_alt ? (36 + 243 + mask) : (36 + 162 + mask);
-                } else {
-                    v = is_alt ? (36 + 81 + mask) : (36 + mask);
-                }
-
-                for (uint8_t y = 0; y < 2; y++) {
-                    for (uint8_t x = 0; x < 4; x++) {
-                        uint8_t target_x = (iso_x + x) & 31;
-                        uint8_t target_y = (iso_y + y) & 31;
-                        uint8_t src_tile = tiles_map[4 + v * 8 + y * 4 + x];
-                        map_buffer[target_y * 32 + target_x] = src_tile;
-                    }
-                }
-            }
-        }
+        macro_tiles[0] = parts[tl_offset];
+        macro_tiles[1] = parts[tl_offset + 1];
+        macro_tiles[2] = parts[tr_offset];
+        macro_tiles[3] = parts[tr_offset + 1];
+        macro_tiles[4] = parts[bl_offset];
+        macro_tiles[5] = parts[bl_offset + 1];
+        macro_tiles[6] = parts[br_offset];
+        macro_tiles[7] = parts[br_offset + 1];
+        write_macro_tiles(iso_x, iso_y);
     }
     
     update_stamina_display();
     
-    // Flush dinamico a 16 righe (512 byte) centrato sulla iso_y del centro di disegno,
-    // con gestione del wrap della mappa 32x32. 16 righe = prestazioni del progetto
-    // originale; centrando su center_iso_y la nebbia ricade sempre nelle righe flussate
-    // anche nei labirinti grandi, dove le iso_y assolute wrappano fuori dal vecchio
-    // range fisso 2-17.
-    int16_t center_iso_y = (int16_t)center_x + (int16_t)center_y + 2;
-    uint8_t start = (uint8_t)((center_iso_y - 8) & 31);
-    if (start + 16 <= 32) {
-        set_bkg_tiles(0, start, 32, 16, &map_buffer[(uint16_t)start * 32]);
+    // Rettangolo geometrico che contiene tutti i macro-tile 4x2 della finestra
+    // corrente. L'unione con il rettangolo precedente trasferisce anche gli zero
+    // che cancellano il bordo di fog appena uscito dalla visibilita'.
+    if (!map_cache_valid) {
+        // Dopo titolo, intermezzo o cambio livello non esiste una regione
+        // precedente affidabile: inizializziamo una sola volta l'intera tilemap.
+        set_bkg_tiles(0, 0, 32, 32, map_buffer);
+        map_cache_valid = 1;
     } else {
-        uint8_t first = 32 - start;
-        set_bkg_tiles(0, start, 32, first, &map_buffer[(uint16_t)start * 32]);
-        set_bkg_tiles(0, 0, 32, 16 - first, map_buffer);
+        int8_t dirty_left = (current_left < previous_left) ? current_left : previous_left;
+        int8_t dirty_right = (current_right > previous_right) ? current_right : previous_right;
+        int8_t dirty_top = (current_top < previous_top) ? current_top : previous_top;
+        int8_t dirty_bottom = (current_bottom > previous_bottom) ? current_bottom : previous_bottom;
+        uint8_t dirty_width = (uint8_t)(dirty_right - dirty_left + 1);
+        uint8_t dirty_height = (uint8_t)(dirty_bottom - dirty_top + 1);
+
+        // Un salto non adiacente puo' estendere l'unione oltre una rivoluzione
+        // della tilemap. In quel caso il full flush e' piu' semplice e sicuro.
+        if (dirty_width > 32 || dirty_height > 32) {
+            set_bkg_tiles(0, 0, 32, 32, map_buffer);
+        } else {
+            flush_wrapped_map_rect(dirty_left, dirty_top, dirty_width, dirty_height);
+        }
     }
+
+    previous_left = current_left;
+    previous_right = current_right;
+    previous_top = current_top;
+    previous_bottom = current_bottom;
 }
 
 /**

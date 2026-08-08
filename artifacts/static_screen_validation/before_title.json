@@ -1,0 +1,7 @@
+{
+  "rom": "build/hello_iso.gb",
+  "screen": "title",
+  "app_state": 0,
+  "game_over": 0,
+  "level": 1
+}

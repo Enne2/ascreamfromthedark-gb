@@ -114,8 +114,9 @@ void engine_init(void) {
     set_sprite_data(0, player_TILE_COUNT, player_tiles);
     set_sprite_data(player_TILE_COUNT, enemy_TILE_COUNT, enemy_tiles);
     set_sprite_data(player_TILE_COUNT + enemy_TILE_COUNT, gameover_TILE_COUNT, gameover_tiles);
-    // Load stamina_tiles AFTER the background tiles to prevent VRAM overlap in the shared block (indices > 127)
-    set_sprite_data(tiles_TILE_COUNT, stamina_TILE_COUNT * 2, stamina_tiles);
+    // 8x16 sprite mode requires an even base. stamina_TILE_COUNT already
+    // counts the 26 physical 8x8 tiles, so it must not be doubled.
+    set_sprite_data(STAMINA_SPRITE_BASE, stamina_TILE_COUNT, stamina_tiles);
     // Load the level HUD glyph tiles right after stamina (blank, 'L', '0'..'9').
     set_sprite_data(LEVEL_SPRITE_BASE, level_TILE_COUNT, level_tiles);
 
@@ -192,6 +193,11 @@ void engine_init(void) {
     is_moving = 0;
     is_running = 0;
 
+    // La tilemap VRAM puo' contenere ancora una schermata o il livello precedente.
+    // Il primo draw deve quindi sincronizzarla integralmente prima di attivare
+    // gli aggiornamenti incrementali.
+    reset_map_render_cache();
+
     // Richiama render.c per forzare un disegno iniziale della scena
     draw_map(player_lx, player_ly);
     update_camera();
@@ -227,8 +233,11 @@ void engine_update(uint8_t keys, uint8_t prev_keys) {
             // Ricarica i tile degli sprite (stessa tile RAM condivisa)
             set_sprite_data(0, player_TILE_COUNT, player_tiles);
             set_sprite_data(player_TILE_COUNT, enemy_TILE_COUNT, enemy_tiles);
-            set_sprite_data(tiles_TILE_COUNT, stamina_TILE_COUNT * 2, stamina_tiles);
+            set_sprite_data(STAMINA_SPRITE_BASE, stamina_TILE_COUNT, stamina_tiles);
             set_sprite_data(LEVEL_SPRITE_BASE, level_TILE_COUNT, level_tiles);
+            // Le istruzioni usano map_buffer come buffer testuale: il suo
+            // contenuto non e' piu' una cache valida della tilemap di gioco.
+            reset_map_render_cache();
             draw_map(player_lx, player_ly); // ridisegna la scena (tile ripristinati)
             update_camera();
             update_player_sprite();

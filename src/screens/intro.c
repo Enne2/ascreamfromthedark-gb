@@ -23,7 +23,7 @@ void show_intro(void) {
     ending_puttext(6, 13, "is gone.");
     ending_puttext(0, 15, "Descend deeper into");
     ending_puttext(6, 16, "the unknown.");
-    set_win_tiles(0, 0, 32, 32, map_buffer);
+    set_win_submap(0, 0, 20, 18, map_buffer, 32);
     move_win(7, 0);
     SHOW_WIN;
 }

@@ -21,3 +21,11 @@ Sei imprigionato in un labirinto generato casualmente, illuminato solo da un ris
 6. **[Sintesi Audio e Musica](audio.md)** — 4 canali APU, sequencer via VBL interrupt, title music (112 note, 3 canali), gameplay eerie, gameover, finale dedicato (192 note, loop).
 
 7. **[Report Tecnico Approfondito](AScreamFromTheDark_report.md)** — Analisi completa di architettura, funzionalità, workaround storici e debiti tecnici.
+
+8. **[Audit codice, documentazione e target — 2026-07-30](audit_target_report_2026-07-30.md)** — Verifica “as built” dello snapshot `a8a6a32`: profilo reale della ROM, compatibilità DMG/CGB, budget ROM/WRAM/VRAM/OAM, smoke test, divergenze documentali, rischi e piano di intervento.
+
+9. **[Audit del sistema di tiling del pavimento — 2026-07-30](floor_tiling_audit_2026-07-30.md)** — Analisi dell'autotiling ternario isometrico, misure ROM/VRAM, prova di fattorizzazione pixel-identica e piano di ottimizzazione del renderer.
+
+10. **[Ottimizzazione tiling e validazione visiva — 2026-08-08](tiling_optimization_validation_2026-08-08.md)** — Implementazione in quattro fasi, misure finali, gate pixel-perfect e trace completo dei wrap X/Y.
+
+11. **[Consolidamento release — 2026-08-08](release_hardening_2026-08-08.md)** — Correzione stamina/VRAM, clean build sicura, suite headless, isolamento script legacy, clear incrementale, schermate statiche e header cartuccia.

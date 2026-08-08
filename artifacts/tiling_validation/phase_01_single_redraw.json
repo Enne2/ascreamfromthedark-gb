@@ -1,0 +1,18 @@
+{
+  "rom": "/tmp/tiling_phase_01.gb",
+  "start": [
+    1,
+    1
+  ],
+  "move": "down",
+  "target": [
+    1,
+    2
+  ],
+  "final": [
+    1,
+    2
+  ],
+  "map_size": 7,
+  "hint_shown_once": 1
+}

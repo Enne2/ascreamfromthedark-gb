@@ -19,7 +19,7 @@ void show_instructions(void) {
     ending_puttext(2, 12, "PRESS B");
     ending_puttext(2, 13, "TO CONTINUE");
     // Window layer: tile map separato (0x9C00) dal BG (0x9800)
-    set_win_tiles(0, 0, 32, 32, map_buffer);
+    set_win_submap(0, 0, 20, 18, map_buffer, 32);
     move_win(7, 0); // -7 pixel offset: allinea a sinistra
     SHOW_WIN;
 }

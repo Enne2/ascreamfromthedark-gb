@@ -1,0 +1,10 @@
+{
+  "rom": "/tmp/stamina_fixed.gb",
+  "screen": "deeper",
+  "app_state": 1,
+  "game_over": 2,
+  "level": 1,
+  "buffer_nonzero": 17,
+  "bg_map_nonzero": 17,
+  "alt_map_nonzero": 55
+}

@@ -16,5 +16,5 @@ void show_death(void) {
     ending_puttext(8, 7,  "YOU");
     ending_puttext(4, 14, "PRESS START");
     ending_puttext(5, 15, "AND RETRY");
-    set_bkg_tiles(0, 0, 32, 32, map_buffer);
+    set_bkg_submap(0, 0, 20, 18, map_buffer, 32);
 }

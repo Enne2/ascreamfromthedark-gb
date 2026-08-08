@@ -1,0 +1,172 @@
+"""Generate compact, pixel-equivalent lookup tables for isometric tiling."""
+
+from pathlib import Path
+
+from PIL import Image
+
+
+ROOT = Path(__file__).resolve().parent.parent
+SOURCE = ROOT / "assets" / "tiles.png"
+OUTPUT_C = ROOT / "src" / "tiling_parts.c"
+OUTPUT_H = ROOT / "src" / "tiling_parts.h"
+
+FLOOR_GROUPS = 4
+FLOOR_VARIANTS_PER_GROUP = 9
+HATCH_FIRST_VARIANT = 36
+HATCH_GROUPS = 4
+HATCH_VARIANTS_PER_GROUP = 81
+TILES_PER_VARIANT = 8
+
+
+def build_tile_map(image: Image.Image) -> list[int]:
+    """Reproduce png2asset's row-major, no-flip tile deduplication."""
+    if image.mode != "P":
+        raise RuntimeError(f"Expected indexed PNG, got mode {image.mode}")
+    if image.width % 8 or image.height % 8:
+        raise RuntimeError(f"Image size must be divisible by 8, got {image.size}")
+
+    tile_ids: dict[tuple[int, ...], int] = {}
+    tile_map: list[int] = []
+    pixels = image.load()
+
+    for tile_y in range(0, image.height, 8):
+        for tile_x in range(0, image.width, 8):
+            tile = tuple(
+                pixels[tile_x + x, tile_y + y]
+                for y in range(8)
+                for x in range(8)
+            )
+            tile_id = tile_ids.get(tile)
+            if tile_id is None:
+                tile_id = len(tile_ids)
+                tile_ids[tile] = tile_id
+            tile_map.append(tile_id)
+
+    if len(tile_ids) != 151:
+        raise RuntimeError(f"Expected 151 unique tiles, found {len(tile_ids)}")
+    if len(tile_map) != 2884:
+        raise RuntimeError(f"Expected 2884 map entries, found {len(tile_map)}")
+    return tile_map
+
+
+def variants_from(tile_map: list[int]) -> list[list[int]]:
+    # The first 8-pixel row is four blank hardware tiles. Every following
+    # 32x16 macro-tile occupies eight consecutive map entries.
+    payload = tile_map[4:]
+    variants = [
+        payload[offset : offset + TILES_PER_VARIANT]
+        for offset in range(0, len(payload), TILES_PER_VARIANT)
+    ]
+    if len(variants) != 360 or any(len(row) != 8 for row in variants):
+        raise RuntimeError("Unexpected exhaustive variant layout")
+    return variants
+
+
+def compact_floor(variants: list[list[int]]) -> list[list[int]]:
+    result: list[list[int]] = []
+    for group in range(FLOOR_GROUPS):
+        base = group * FLOOR_VARIANTS_PER_GROUP
+        row: list[int] = []
+        for state in range(3):
+            row.extend(variants[base + state][0:2])
+        for state in range(3):
+            row.extend(variants[base + state * 3][2:4])
+        row.extend(variants[base][4:8])
+        result.append(row)
+    return result
+
+
+def compact_hatch(variants: list[list[int]]) -> list[list[int]]:
+    result: list[list[int]] = []
+    weights = (1, 3, 9, 27)
+    for group in range(HATCH_GROUPS):
+        base = HATCH_FIRST_VARIANT + group * HATCH_VARIANTS_PER_GROUP
+        row: list[int] = []
+        for corner, weight in enumerate(weights):
+            for state in range(3):
+                position = corner * 2
+                row.extend(variants[base + state * weight][position : position + 2])
+        result.append(row)
+    return result
+
+
+def verify(
+    variants: list[list[int]], floor: list[list[int]], hatch: list[list[int]]
+) -> None:
+    for group in range(FLOOR_GROUPS):
+        base = group * FLOOR_VARIANTS_PER_GROUP
+        for index in range(FLOOR_VARIANTS_PER_GROUP):
+            state_tl = index % 3
+            state_tr = index // 3
+            parts = floor[group]
+            rebuilt = (
+                parts[state_tl * 2 : state_tl * 2 + 2]
+                + parts[6 + state_tr * 2 : 6 + state_tr * 2 + 2]
+                + parts[12:16]
+            )
+            if rebuilt != variants[base + index]:
+                raise RuntimeError(f"Floor mismatch: group={group}, index={index}")
+
+    weights = (1, 3, 9, 27)
+    for group in range(HATCH_GROUPS):
+        base = HATCH_FIRST_VARIANT + group * HATCH_VARIANTS_PER_GROUP
+        for index in range(HATCH_VARIANTS_PER_GROUP):
+            states = (
+                index % 3,
+                (index // 3) % 3,
+                (index // 9) % 3,
+                (index // 27) % 3,
+            )
+            parts = hatch[group]
+            rebuilt: list[int] = []
+            for corner, state in enumerate(states):
+                offset = corner * 6 + state * 2
+                rebuilt.extend(parts[offset : offset + 2])
+            if rebuilt != variants[base + index]:
+                raise RuntimeError(f"Hatch mismatch: group={group}, index={index}")
+
+
+def format_rows(rows: list[list[int]]) -> str:
+    return ",\n".join(
+        "    { " + ", ".join(f"0x{value:02x}" for value in row) + " }"
+        for row in rows
+    )
+
+
+def main() -> None:
+    image = Image.open(SOURCE)
+    tile_map = build_tile_map(image)
+    variants = variants_from(tile_map)
+    floor = compact_floor(variants)
+    hatch = compact_hatch(variants)
+    verify(variants, floor, hatch)
+
+    OUTPUT_H.write_text(
+        "// AUTOGENERATED by scripts/generate_tiling_parts.py\n"
+        "#ifndef TILING_PARTS_H\n"
+        "#define TILING_PARTS_H\n\n"
+        "#include <stdint.h>\n\n"
+        "#define FLOOR_PARTS_PER_GROUP 16u\n"
+        "#define HATCH_PARTS_PER_GROUP 24u\n\n"
+        "extern const uint8_t floor_parts[4][FLOOR_PARTS_PER_GROUP];\n"
+        "extern const uint8_t hatch_parts[4][HATCH_PARTS_PER_GROUP];\n\n"
+        "#endif\n"
+    )
+    OUTPUT_C.write_text(
+        "// AUTOGENERATED by scripts/generate_tiling_parts.py\n"
+        '#include "tiling_parts.h"\n\n'
+        "const uint8_t floor_parts[4][FLOOR_PARTS_PER_GROUP] = {\n"
+        + format_rows(floor)
+        + "\n};\n\n"
+        "const uint8_t hatch_parts[4][HATCH_PARTS_PER_GROUP] = {\n"
+        + format_rows(hatch)
+        + "\n};\n"
+    )
+    print(
+        "Verified 360 exhaustive variants; wrote "
+        f"{sum(map(len, floor)) + sum(map(len, hatch))} compact lookup bytes"
+    )
+
+
+if __name__ == "__main__":
+    main()

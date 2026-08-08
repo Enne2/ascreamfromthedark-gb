@@ -101,7 +101,10 @@ void update_player_movement(uint8_t keys, uint8_t prev_keys) {
             scroll_y = final_py - 72;
             move_bkg(scroll_x, scroll_y);
             
-            draw_map(player_lx, player_ly);
+            // La mappa e il fog sono gia' stati ricomposti a meta' passo usando
+            // target_lx/target_ly. Ora player_lx/player_ly coincidono con quel
+            // centro, quindi un secondo draw_map() produrrebbe gli stessi byte
+            // e ripeterebbe inutilmente il trasferimento in VRAM.
             update_player_sprite();
             
             // Controllo Casella Vittoria (ID 2)

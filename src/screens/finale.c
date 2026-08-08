@@ -19,5 +19,5 @@ void show_finale(void) {
     ending_puttext(0, 10, "JUST ANOTHER SCREAM");
     ending_puttext(3, 11, "FROM THE DARK.");
     ending_puttext(5, 14, "GAME OVER");
-    set_bkg_tiles(0, 0, 32, 32, map_buffer);
+    set_bkg_submap(0, 0, 20, 18, map_buffer, 32);
 }

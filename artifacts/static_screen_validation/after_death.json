@@ -1,0 +1,10 @@
+{
+  "rom": "build/hello_iso.gb",
+  "screen": "death",
+  "app_state": 1,
+  "game_over": 1,
+  "level": 1,
+  "buffer_nonzero": 35,
+  "bg_map_nonzero": 35,
+  "alt_map_nonzero": 55
+}

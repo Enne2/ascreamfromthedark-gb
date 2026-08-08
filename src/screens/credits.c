@@ -20,7 +20,7 @@ void show_credits(void) {
     ending_puttext(2, 11, "ME@ENNE2.NET 202606");
     ending_puttext(1, 14, "PRESS B TO RETURN");
     // Window layer: tile map separato dal BG
-    set_win_tiles(0, 0, 32, 32, map_buffer);
+    set_win_submap(0, 0, 20, 18, map_buffer, 32);
     move_win(7, 0);
     SHOW_WIN;
 }

@@ -40,8 +40,10 @@ Un survival-horror procedurale in prospettiva isometrica per Game Boy (DMG/CGB),
 - [`enemy_logic.c`](src/enemy_logic.c): AI greedy multi-entity, cooldown scalabile, hitbox.
 - [`render.c`](src/render.c): iso, fog scalabile, auto-tiling, flush dinamico, HUD.
 - [`sound.c`](src/sound.c): sequencer VBL, 5 tracce + SFX.
-- Asset: `tiles.c`, `player.c`, `enemy.c`, `gameover.c`, `stamina.c`, `level.c`, `claimed.c`, `title_bg.c`.
-- [`scripts/`](scripts/): generazione asset (`generate_assets.py`, `generate_enemy.py`, `generate_level.py`), test.
+- Asset: `tiles.c`, `player.c`, `enemy.c`, `gameover.c`, `stamina.c`, `level.c`, `title_bg.c` (generati da `png2asset`).
+- [`scripts/`](scripts/): generazione asset (`generate_assets.py`, `generate_enemy.py`, `generate_level.py`, `generate_tiling_parts.py`), test (`validate_*.py`). Gli script non usati dalla build sono in `scripts/legacy/`.
+- `assets/`: solo gli 8 PNG sorgente della build; scarti in `assets/wip/` (ignorato da git), materiale cartuccia in `assets/cartridge/`.
+- `src/archive/`: moduli C non compilati (asset sperimentali e test orfani).
 
 ### Coordinate isometriche
 ```
@@ -57,8 +59,8 @@ Documentazione approfondita: [`doc/`](doc/) — [index](doc/index.md), [report](
 ## Requisiti e build
 
 ### Prerequisiti
-1. **GBDK-2020** in `/home/enne2/.local/gbdk`.
-2. **Python 3** con: `pip install --user Pillow pyboy opencv-python numpy`
+1. **GBDK-2020** in `$HOME/.local/gbdk`, oppure impostare `GBDK_HOME`.
+2. **Python 3** con: `pip install --user Pillow pyboy`
 
 ### Compilazione
 ```bash
@@ -70,8 +72,9 @@ Output: `build/hello_iso.gb` (32 KB) + `build/test_gameover.gb` + `build/test_fi
 
 ## Test
 
-1. **Screenshot** — `python3 scripts/test_pyboy.py`
-2. **Movimento WRAM** — `python3 scripts/test_movement.py`
-3. **Glitch OpenCV** — `python3 scripts/opencv_analyze_tiles.py`
-4. **ROM game over** — `make build/test_gameover.gb`
-5. **ROM finale** — `make build/test_finale.gb` (va subito al finale con musica, per test rapidi)
+1. **Suite headless deterministica** — `make test`
+2. **ROM game over** — `make build/test_gameover.gb`
+3. **ROM finale** — `make build/test_finale.gb` (va subito al finale con musica, per test rapidi)
+
+La build normale usa gli asset C versionati e non modifica il working tree.
+La rigenerazione esplicita da PNG si esegue con `make assets`.

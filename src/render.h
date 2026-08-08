@@ -14,6 +14,9 @@
 // Draw the isometric map centered around a specific logical tile
 void draw_map(uint8_t center_x, uint8_t center_y);
 
+// Invalidate the cached VRAM bounds before entering a newly initialized level.
+void reset_map_render_cache(void);
+
 // Update the background camera scroll position to center the player
 void update_camera(void);
 
@@ -23,11 +26,10 @@ void update_stamina_display(void);
 // Update the level indicator (top-left HUD)
 void update_level_display(void);
 
-// Base VRAM sprite tile index for the level HUD glyphs. Placed after the full stamina
-// load claim and aligned UP to an EVEN tile index: in 8x16 sprite mode the hardware
-// ignores the tile-index LSB, so the base must be even for base + 2*i to land on the
-// glyph's top tile. Disjoint from BG tile block and stamina (same rationale as 93deb35).
-#define LEVEL_SPRITE_BASE  ((uint8_t)(((tiles_TILE_COUNT + (uint8_t)(stamina_TILE_COUNT * 2)) + 1) & (uint8_t)0xFEu))
+// In 8x16 mode the hardware ignores the tile-index LSB. Both sprite asset
+// blocks therefore start at an even tile and occupy their real generated size.
+#define STAMINA_SPRITE_BASE ((uint8_t)((tiles_TILE_COUNT + 1u) & (uint8_t)0xFEu))
+#define LEVEL_SPRITE_BASE   ((uint8_t)((STAMINA_SPRITE_BASE + stamina_TILE_COUNT + 1u) & (uint8_t)0xFEu))
 
 // Update the player sprite (animation frames, jumping height offset)
 void update_player_sprite(void);

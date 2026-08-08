@@ -14,5 +14,5 @@ void show_going_deeper(void) {
     ending_puttext(2, 7,  "GOING DEEPER");
     ending_puttext(3, 9,  "LEVEL");
     ending_putdigit(9, 9, (uint8_t)(level + 1));
-    set_bkg_tiles(0, 0, 32, 32, map_buffer);
+    set_bkg_submap(0, 0, 20, 18, map_buffer, 32);
 }
