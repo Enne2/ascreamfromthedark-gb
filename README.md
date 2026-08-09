@@ -79,7 +79,7 @@ Sito documentazione (MkDocs): `mkdocs serve` in locale, deploy automatico su Git
 ```bash
 make clean && make
 ```
-Output: `build/hello_iso.gb` (32 KB) + `build/test_gameover.gb`.
+Output: `build/AScreamFromTheDark.gb` (32 KB) + `build/test_gameover.gb`.
 
 Puoi rinominare il ROM principale con `make release`:
 ```bash
